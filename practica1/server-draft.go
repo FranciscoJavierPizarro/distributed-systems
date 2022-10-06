@@ -77,8 +77,8 @@ func secuentialServer(listener net.Listener) {
 	}
 }
 
-//Apaño para multithread
-func ManageRequest_TH(decoder *gob.Decoder,encoder *gob.Encoder,conn net.Conn,done chan bool){
+//Apaño para multithread y poolthread
+func ManageRequest_TH(decoder *gob.Decoder,encoder *gob.Encoder,conn net.Conn,done chan bool,pool bool){
 	defer conn.Close()
 	var request com.Request
 	err := decoder.Decode(&request)
@@ -86,7 +86,9 @@ func ManageRequest_TH(decoder *gob.Decoder,encoder *gob.Encoder,conn net.Conn,do
 	if(request.Id == -1) {
 		done <- true
 	} else {
+		if(!pool){//para el multithread se envia el canal done, para el pool no
 		done <- false
+		}
 		Reply := com.Reply{request.Id,FindPrimes(request.Interval)}
 		errRep := encoder.Encode(Reply)
 		checkError(errRep)
@@ -108,37 +110,46 @@ func threadedServer(listener net.Listener) {
 				break
 			}
 		}
-
 		conn, err := listener.Accept()
 		encoder := gob.NewEncoder(conn)
 		decoder := gob.NewDecoder(conn)
 		checkError(err)
-		go ManageRequest_TH(decoder,encoder,conn,done)
+		go ManageRequest_TH(decoder,encoder,conn,done,first)
 	}
 }
 
-func handleComms(ch chan net.Conn) {
+func handleComms(start chan bool,listener net.Listener,done chan bool,next chan bool) {
+	var b bool = true
 	for {
-		conn := <-ch
+		<-start
+		conn, err := listener.Accept()
 		encoder := gob.NewEncoder(conn)
 		decoder := gob.NewDecoder(conn)
-		ManageRequest(decoder,encoder,conn)
+		checkError(err)
+		ManageRequest_TH(decoder,encoder,conn,done,b)
+		next <- b
 	}
 }
 
 func poolThreadedServer(listener net.Listener) {
 	fmt.Println("Servidor pool threads")
-	ch := make(chan net.Conn)
+	start := make(chan bool)
+	next := make (chan bool)
+	done :=make(chan bool)
 	NTHREAD := 10
+	var b bool = true
 	for i:=0;i<NTHREAD;i++ {
-		go handleComms(ch)
+		go handleComms(start,listener,done,next)
+		start <- b
 	}
 	
-	var b bool = true
-	for b{
-		conn, err := listener.Accept()
-		checkError(err)
-		ch <- conn
+	for {
+		select{
+		case <- next:
+			start <- b
+		case <- done:
+			return
+		}
 	}
 }
 
