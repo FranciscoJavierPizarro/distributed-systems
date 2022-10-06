@@ -21,6 +21,8 @@
 *	- Modificar las ips de escucha del listener de workers y las ips
 *	  de conexión de los workers, modificar listado de ips.txt y variable
 *	  user del launchWorkers.sh
+*	- Copiar el ejecutable masterWorker a la carpeta HOME de las máquinas
+*	  que van a ser workers.
 *
 * Pendiente de implementar por falta de tiempo:
 *	- Control de vida de los procesos worker
@@ -146,44 +148,44 @@ func serverCore(tasksChan chan Task) {
 	var readyToEnd bool = false
 	end := []bool{false}
 	launchWorkers(workersChan)
-
 	for !end[0] {
 		select{
-		//Recibe los distintos workers y apunta sus canales y los marca como dispibles
 		case conn :=<-workersChan:
-			fmt.Println("Mensaje recibido en workersChan")
-			workers = append(workers, conn)
-			
-			if (len(acummulatedTasks) == 0) {
-				readyToWork = append(readyToWork, true)
-			}else {
-				readyToWork = append(readyToWork, false)
-				task := acummulatedTasks[0]
-				acummulatedTasks = acummulatedTasks[1:]
-				clients[task.Id] = task.Conn
-				request := WReq{task.Id, task.Interval, len(readyToWork) - 1}
-				assignTask(conn,request)
-				go listenAnwsers(conn,replyChan)
-				
-			}
-		//Recibe una tarea, se la asigna a un worker libre y lo marca como ocupado
-		//Si no hya workers libres, la marca como tarea pendiente
+			workers, readyToWork, acummulatedTasks = manageNewWorker(conn,workers,acummulatedTasks,readyToWork,clients,replyChan)
 		case task :=<-tasksChan:
 			//acummulated se devuelve porque sobre el se hace un append y dicho cambio solo afecta a la copia
 			//interna del slice de la función
 			acummulatedTasks = manageTask(task,workers,clients,readyToWork,acummulatedTasks, replyChan,readyToEnd, end)
-
-		//Recibe una respuesta y la procesa, en caso de que el id de la tarea -1 ya
-		// haya aparecido y todos los workers esten libres los apaga
 		case reply:=<-replyChan:
-			//acummulated se devuelve porque sobre el se hace un append y dicho cambio solo afecta a la copia
-			//interna del slice de la función
 			acummulatedTasks = manageReply(reply, clients, workers, readyToWork, acummulatedTasks, replyChan, readyToEnd, end)
 		}
-			
 	}
 	turnOffWorkers(workers)
 }
+
+
+//Recibe la conexión de un nuevo worker, en caso de que haya tareas acumuladas le asigna una y lo 
+//marca como ocupado, en caso de que no haya tareas lo marca como libre
+//en ambos casos añade su conexión al array workers
+func manageNewWorker(conn net.Conn,workers []net.Conn, acummulatedTasks []Task,
+readyToWork []bool,clients []net.Conn, replyChan chan WorkerReply) ([]net.Conn, []bool, []Task) {
+	fmt.Println("Mensaje recibido en workersChan")
+	workers = append(workers, conn)
+	
+	if (len(acummulatedTasks) == 0) {
+		readyToWork = append(readyToWork, true)
+	}else {
+		readyToWork = append(readyToWork, false)
+		task := acummulatedTasks[0]
+		acummulatedTasks = acummulatedTasks[1:]
+		clients[task.Id] = task.Conn
+		request := WReq{task.Id, task.Interval, len(readyToWork) - 1}
+		assignTask(conn,request)
+		go listenAnwsers(conn,replyChan)
+	}
+	return workers, readyToWork, acummulatedTasks
+}
+
 
 //se lanza cuando el master recibe un, en nueva tarea por parte de un cliente
 //comprueba si es la tarea final, en caso de ser esta marca el posible fin
