@@ -1,12 +1,37 @@
 /*
-* AUTOR: Rafael Tolosana Calasanz
-* ASIGNATURA: 30221 Sistemas Distribuidos del Grado en Ingeniería Informática
-*			Escuela de Ingeniería y Arquitectura - Universidad de Zaragoza
-* FECHA: septiembre de 2021
-* FICHERO: server.go
-* DESCRIPCIÓN: contiene la funcionalidad esencial para realizar los servidores
-*				correspondientes a la práctica 1
+* Autores:
+*	Jorge Solán Morote NIA: 816259
+*	Francisco Javier Pizarro NIA:  821259
+* Fecha de última revisión:
+*	06/10/2022
+* Descripción de la estructura del código:
+*	1. Importar paquetes
+*	2. Funciones generales de servidor y estructuras de datos
+*	3. Funciones particulares core del servidor
+*	4. Funciones de comunicación del servidor con los clientes
+*	5. Funciones de comunicación del servidor con los workers
+*	6. Funciones empleadas por el servidor para el apagado y 
+*	   encendido de los workers
+*	7. Función de worker y funciones auxiliares
+*	8. Main, desde el se lanza un proceso worker o un proceso masterWorker
+*	   para lanzar un worker se tiene que usar el flag de incovación --worker
+*	   en caso de no usar este flag se lanza un proceso masterWorker
+*
+* Notas de despligue:
+*	- Modificar las ips de escucha del listener de workers y las ips
+*	  de conexión de los workers, modificar listado de ips.txt y variable
+*	  user del launchWorkers.sh
+*
+* Pendiente de implementar por falta de tiempo:
+*	- Control de vida de los procesos worker
+*	- Uso de threads en los workers para procesar varias tareas de forma
+*	  simultanea
 */
+
+//
+// IMPORTAR PAQUETES
+//
+
 package main
 
 import (
@@ -20,6 +45,10 @@ import (
 	"practica1/com"
 	"flag"
 )
+
+//
+// FUNCIONES GENERALES DEL SERVIDOR Y ESTRUCTURAS DE DATOS
+//
 
 func checkError(err error) {
 	if err != nil {
@@ -62,49 +91,6 @@ type Anwser struct {
 	Primes []int
 }
 
-func workersServer(listener net.Listener) {
-	fmt.Println("Servidor masterWorker")
-	tasksChan := make(chan Task)
-	
-	go listenClients(listener,tasksChan)
-	manageWorkers(tasksChan)
-
-}
-
-func listenClients(listener net.Listener,tasksChan chan Task) {
-	var b bool = true
-	//Escucha clientes hasta que llega el último paquete
-	for b{
-		conn, err := listener.Accept()
-		checkError(err)
-		decoder := gob.NewDecoder(conn)
-		var request com.Request
-		errd := decoder.Decode(&request)
-		checkError(errd)
-		if (request.Id == -1) {
-			b = false
-		}
-		task := Task{request.Id,conn,request.Interval}
-		tasksChan <- task
-		fmt.Println("Tarea añadida por cliente")
-	}
-	// cuando resultsChan devuelve Anwser{-1,-1,[0]) se acaba
-}
-
-
-func anwserClient(anwser Anwser) {
-	//Extrae los resultados y se encarga de enviarlos y de cerrar las conexiones
-	id := anwser.Id
-	conn := anwser.Conn
-	defer conn.Close()
-	primes := anwser.Primes
-	reply := com.Reply{id,primes}
-	encoder := gob.NewEncoder(conn)
-	errRep := encoder.Encode(reply)
-	checkError(errRep)
-	fmt.Println("Resultado enviado")
-}
-
 type WReq struct {
     Id int
     Interval com.TPInterval
@@ -117,33 +103,50 @@ type WorkerReply struct {
 	WorkerId int
 }
 
-func manageWorkers(tasksChan chan Task) {
-	//Recibe tareas por tasksChan, las asigna a los workers disponibles o las guarda
-	//hasta tener workers disponibles, devuelve los resultados por resultsChan
-	//cuando un worker responde con una anwser de id -1 apaga a todos y finaliza.
+//
+// FUNCIONES PARTICULARES CORE DEL SERVIDOR
+//
+
+func workersServer(listener net.Listener) {
+	fmt.Println("Servidor masterWorker")
+	tasksChan := make(chan Task)
 	
-	//Constantes y conexión
-	// N_WORKERS:= 1
+	go listenClients(listener,tasksChan)
+	serverCore(tasksChan)
+
+}
+
+//Crea la conexión con los workers y los lanza, devuelve las conexiones al core
+func launchWorkers(workersChan chan net.Conn) {
+	//Conexión
 	CONN_TYPE := "tcp"
 	CONN_HOST := "127.0.0.1"
 	CONN_PORT := "30001"
 	workerListener, err := net.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
 	checkError(err)
+	//Encendemos los workers
+	go listenWorkers(workerListener,workersChan)
+	go turnOnWorkers()
+}
 
-	//Listas dinámicas para almacenar workers, comunicarse con ellos, almacenar las tareas
-	//y el estado de cada worker
+//FUNCIÓN CORE DEL SERVIDOR
+//escucha los nuevos workers, las nuevas tareas y las respuestas de los workers a las tareas
+//cada uno en su corespondiente canal, para cada respuesta lanza la función de control correspondiente
+func serverCore(tasksChan chan Task) {
+	//Canales para la recepción de información por parte de las funciones de escucha
 	workersChan := make(chan net.Conn)
 	replyChan := make(chan WorkerReply)
+	//Colas internas para el control de los workers, de las conexiones de los clientes
+	//y de las tareas pendientes
 	workers := make([]net.Conn,0)
 	clients := make([]net.Conn,1000)
 	acummulatedTasks := make([]Task,0)
 	readyToWork := make([]bool,0)
+	//Variables de control del fin
 	var readyToEnd bool = false
 	end := []bool{false}
-	//Encendemos los workers
-	go listenWorkers(workerListener,workersChan)
-	go turnOnWorkers()
-	
+	launchWorkers(workersChan)
+
 	for !end[0] {
 		select{
 		//Recibe los distintos workers y apunta sus canales y los marca como dispibles
@@ -151,7 +154,6 @@ func manageWorkers(tasksChan chan Task) {
 			fmt.Println("Mensaje recibido en workersChan")
 			workers = append(workers, conn)
 			
-			// CONSIDERAR WORKER ENTRA Y YA HAY TAREAS PENTIENTES
 			if (len(acummulatedTasks) == 0) {
 				readyToWork = append(readyToWork, true)
 			}else {
@@ -174,6 +176,8 @@ func manageWorkers(tasksChan chan Task) {
 		//Recibe una respuesta y la procesa, en caso de que el id de la tarea -1 ya
 		// haya aparecido y todos los workers esten libres los apaga
 		case reply:=<-replyChan:
+			//acummulated se devuelve porque sobre el se hace un append y dicho cambio solo afecta a la copia
+			//interna del slice de la función
 			acummulatedTasks = manageReply(reply, clients, workers, readyToWork, acummulatedTasks, replyChan, readyToEnd, end)
 		}
 			
@@ -181,6 +185,12 @@ func manageWorkers(tasksChan chan Task) {
 	turnOffWorkers(workers)
 }
 
+//se lanza cuando el master recibe un, en nueva tarea por parte de un cliente
+//comprueba si es la tarea final, en caso de ser esta marca el posible fin
+//y comprueba si quedan workers trabajando o tareas pendientes
+//en caso de que ambas respuestas sean no, finaliza el servicio
+//si es una tarea normal trata de asignarla a un worker libre(y escuchar su respuesta)
+//si no hay workers libres la añade a la cola de tareas pendientes
 func manageTask(task Task, workers []net.Conn, clients []net.Conn, readyToWork []bool, acummulatedTasks []Task, replyChan chan WorkerReply, readyToEnd bool, end []bool) ([]Task){
 	fmt.Println("Mensaje recibido en tasksChan")
 	fmt.Println(task.Id)
@@ -218,8 +228,16 @@ func manageTask(task Task, workers []net.Conn, clients []net.Conn, readyToWork [
 	return acummulatedTasks
 }
 
-func manageReply(reply WorkerReply, clients []net.Conn, workers []net.Conn, readyToWork []bool, acummulatedTasks []Task,
-replyChan chan WorkerReply, readyToEnd bool, end []bool) ([]Task){
+//Cuando un worker envia una respuesta al master
+//esta función gestiona el envio de la respuesta al cliente
+//y marca el worker como libre si no hay tareas pendientes
+//si hay tareas pendientes le asigna una al worker
+//si ya se ha recibido la señal de fin comprueba
+//si quedan tareas pendientes y si quedan workers trabajando
+//si la en ambos casos la respuesta es no, marca el fin del servidor
+//devuelve la lista de tareas pendientes
+func manageReply(reply WorkerReply, clients []net.Conn, workers []net.Conn, readyToWork []bool,
+acummulatedTasks []Task, replyChan chan WorkerReply, readyToEnd bool, end []bool) ([]Task){
 	fmt.Println("Mensaje recibido en replyChan")
 	anwser := Anwser{reply.Id,clients[reply.Id],reply.Primes}
 	anwserClient(anwser)
@@ -245,6 +263,75 @@ replyChan chan WorkerReply, readyToEnd bool, end []bool) ([]Task){
 	return acummulatedTasks
 }
 
+//
+// FUNCIONES DEL SERVIDOR PARA LA COMUNICACIÓN CON LOS CLIENTES
+//
+
+//Escucha clientes y va mandando las tareas con sus respectivos clientes
+//al core del servidor
+func listenClients(listener net.Listener,tasksChan chan Task) {
+	//Escucha clientes hasta que llega el último paquete con id -1
+	var b bool = true
+	for b{
+		conn, err := listener.Accept()
+		checkError(err)
+		decoder := gob.NewDecoder(conn)
+		var request com.Request
+		errd := decoder.Decode(&request)
+		checkError(errd)
+		if (request.Id == -1) {
+			b = false
+		}
+		task := Task{request.Id,conn,request.Interval}
+		tasksChan <- task
+		fmt.Println("Tarea añadida por cliente")
+	}
+}
+
+//Dada una respuesta la envia al cliente y cierra la conexión
+func anwserClient(anwser Anwser) {
+	//Extrae los resultados y se encarga de enviarlos y de cerrar las conexiones
+	id := anwser.Id
+	conn := anwser.Conn
+	defer conn.Close()
+	primes := anwser.Primes
+	reply := com.Reply{id,primes}
+	encoder := gob.NewEncoder(conn)
+	errRep := encoder.Encode(reply)
+	checkError(errRep)
+	fmt.Println("Resultado enviado")
+}
+
+
+//
+// FUNCIONES DEL SERVIDOR PARA LA COMUNICACIÓN CON LOS WORKERS
+//
+
+
+//Dada una conexión a un worker le manda la tarea
+func assignTask(conn net.Conn, wreq WReq) {
+	encoder := gob.NewEncoder(conn)
+	err := encoder.Encode(wreq)
+	checkError(err)
+	fmt.Println("Tarea asignada")
+}
+
+//Dada una conexión a un worker espera su respuesta y la devuelve al core del server
+func listenAnwsers(workerConn net.Conn, replyChan chan WorkerReply) {
+	decoder := gob.NewDecoder(workerConn)
+	var reply WorkerReply
+	err := decoder.Decode(&reply)
+	checkError(err)
+	fmt.Println("Respuesta recibida")
+	replyChan <- reply
+}
+
+//
+// FUNCIONES DEL SERVIDOR PARA APAGAR Y
+// ENCENDER LOS WORKERS
+//
+
+//Enciende los workers
 func turnOnWorkers() {
 	//LLama a ./launchWorkers.sh
 	cmd := exec.Command("./launchWorkers.sh")
@@ -256,6 +343,7 @@ func turnOnWorkers() {
 	return
 }
 
+//Crea las conexiones con los workers encendidos y se las pasa al core del server
 func listenWorkers(listener net.Listener, workersChan chan net.Conn) {
 	//Crea la comunicación con todos los workers
 	for {
@@ -267,24 +355,7 @@ func listenWorkers(listener net.Listener, workersChan chan net.Conn) {
 	return
 }
 
-func assignTask(conn net.Conn, wreq WReq) {
-	//Dada una conexión a un worker le manda la tarea
-	encoder := gob.NewEncoder(conn)
-	err := encoder.Encode(wreq)
-	checkError(err)
-	fmt.Println("Tarea asignada")
-}
-
-func listenAnwsers(workerConn net.Conn, replyChan chan WorkerReply) {
-	//Dada una conexión a un worker espera su respuesta y la devuelve por anwserChan
-	decoder := gob.NewDecoder(workerConn)
-	var reply WorkerReply
-	err := decoder.Decode(&reply)
-	checkError(err)
-	fmt.Println("Respuesta recibida")
-	replyChan <- reply
-}
-
+//Apaga todos los workers
 func turnOffWorkers(conns []net.Conn) {
 	//Cierra la comunicación con todos los workers
 	wreq := WReq{-1,com.TPInterval{0,0},-1}
@@ -297,39 +368,60 @@ func turnOffWorkers(conns []net.Conn) {
 	return
 }
 
-func workerProtocol() {
-	//Creación de la conexión al server
+//
+// FUNCIÓN DEL WORKER Y FUNCIONES AUXILIARES
+//
+
+//Creación de la conexión al server
+func createConn() (net.Conn){
 	fmt.Println("Worker lanzado")
 	endpoint := "127.0.0.1:30001"
 	tcpAddr, err := net.ResolveTCPAddr("tcp", endpoint)
 	checkError(err)
 	conn, err := net.DialTCP("tcp", nil, tcpAddr)
 	checkError(err)
+	return conn
+}
+
+//Procesa una workerRequest, en caso de ser necesario responde con 
+//el resultado usando el encoder, devuelve siempre un booleano
+//indicando si espera o no mas tareas en base a si ha recibido o no
+//el paquete de fin
+func processWorkerRequest(request WReq,encoder *gob.Encoder) (bool) {
+	fmt.Println(request.Id,request.WorkerId)
+	if(request.WorkerId == -1) {
+		fmt.Println("FinWorker")
+		return false
+	} else {
+		reply := WorkerReply{request.Id,FindPrimes(request.Interval),request.WorkerId}
+		errRep := encoder.Encode(reply)
+		checkError(errRep)
+		fmt.Println("Tarea resuelta")
+		return true
+	}
+}
+
+//Protocolo a ejecutar por los workers
+func workerProtocol() {
+	conn := createConn()
 	defer conn.Close()
-	
 	//Bucle principal, se recibe una tarea y se responde la respuesta
-	
 	var request WReq
 	var moreTasks bool = true
 	for moreTasks {
 		encoder := gob.NewEncoder(conn)
 		decoder := gob.NewDecoder(conn)
-		fmt.Println("Tarea asignada")
 		err := decoder.Decode(&request)
+		fmt.Println("Tarea asignada")
 		checkError(err)
-		fmt.Println(request.Id,request.WorkerId)
-		if(request.WorkerId == -1) {
-			moreTasks = false
-			fmt.Println("FinWorker")
-		} else {
-			reply := WorkerReply{request.Id,FindPrimes(request.Interval),request.WorkerId}
-			errRep := encoder.Encode(reply)
-			checkError(errRep)
-			fmt.Println("Tarea resuelta")
-		}
+		moreTasks = processWorkerRequest(request, encoder)
 	}
 }
 
+
+//
+// MAIN
+//
 
 func main() {
 	worker := flag.Bool("worker",false,"This instance of the program is a worker in ther master worker architecture")
@@ -340,11 +432,13 @@ func main() {
 		workerProtocol()
 	} else {
 		//Es un proceso servidor
+		//Creamos listener
 		CONN_TYPE := "tcp"
 		CONN_HOST := "127.0.0.1"
 		CONN_PORT := "30000"
 		listener, err := net.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
 		checkError(err)
+		//Lanzamos función servidor
 		workersServer(listener)
 		fmt.Println("Fin del servicio")
 	}

@@ -1,12 +1,22 @@
 /*
-* AUTOR: Rafael Tolosana Calasanz
-* ASIGNATURA: 30221 Sistemas Distribuidos del Grado en Ingeniería Informática
-*			Escuela de Ingeniería y Arquitectura - Universidad de Zaragoza
-* FECHA: septiembre de 2021
-* FICHERO: server.go
-* DESCRIPCIÓN: contiene la funcionalidad esencial para realizar los servidores
-*				correspondientes a la práctica 1
+* Autores:
+*	Jorge Solán Morote NIA: 816259
+*	Francisco Javier Pizarro NIA:  821259
+* Fecha de última revisión:
+*	06/10/2022
+* Descripción de la estructura del código:
+*	1. Importar paquetes
+*	2. Funciones generales de todos los servidor
+*	3. Servidor secuencial + funcion auxiliar
+*	4. Servidor threaded + funciones auxiliares threade y pool treaded
+*	5. Servidor pool threaded + funcion auxiliar
+*	6. Main, desde el se lanza una de las 3 funciones de servidor aquí definidas
 */
+
+//
+//	IMPORTS
+//
+
 package main
 
 import (
@@ -18,6 +28,10 @@ import (
 	//"com"
 	"practica1/com"
 )
+
+//
+//	FUNCIONES GENERALES
+//
 
 func checkError(err error) {
 	if err != nil {
@@ -48,6 +62,10 @@ func FindPrimes(interval com.TPInterval) (primes []int) {
 	return primes
 }
 
+//
+//	SERVIDOR SECUENCIAL + FUNCION AUXILIAR
+//
+
 //Recibe una peticion y la maneja, tira la conexión en caso necesario
 func ManageRequest(decoder *gob.Decoder,encoder *gob.Encoder,conn net.Conn)(bool){
 	var request com.Request
@@ -77,8 +95,15 @@ func secuentialServer(listener net.Listener) {
 	}
 }
 
-//Apaño para multithread y poolthread
-func ManageRequest_TH(decoder *gob.Decoder,encoder *gob.Encoder,conn net.Conn,done chan bool,pool bool){
+//
+//	SERVIDOR MULTITHREAD + FUNCIÓN AUXILIAR MULTITHREAD Y POOLTHREAD
+//
+
+//función auxiliar para multithread y poolthread
+//recibe una petición y la procesa y responde
+//tiene añadidos el canal done y el booleano pool para la concurrencia
+func ManageRequest_TH(decoder *gob.Decoder,encoder *gob.Encoder,
+	conn net.Conn,done chan bool,pool bool){
 	defer conn.Close()
 	var request com.Request
 	err := decoder.Decode(&request)
@@ -118,6 +143,12 @@ func threadedServer(listener net.Listener) {
 	}
 }
 
+//
+//	SERVIDOR POOL THREAD + FUNCION AUXILIAR
+//
+
+//función que va acepando las conexiones y maneja la concurrencia
+//utilizando el canal next y el canal done
 func handleComms(start chan bool,listener net.Listener,done chan bool,next chan bool) {
 	var b bool = true
 	for {
@@ -153,16 +184,23 @@ func poolThreadedServer(listener net.Listener) {
 	}
 }
 
+//
+// MAIN DEL PROGRAMA
+//
+
 func main() {
+	//Menu
 	var option int
-	fmt.Print("Opciones disponibles: \n\t0 servidor secuencial\n\t1 servidor multithread\n\t2 servidor con pool de threads\n\t3 servidor con workers(ssh)\n\n")
+	fmt.Print("Opciones disponibles: \n\t0 servidor secuencial\n\t1 servidor multithread\n\t2 servidor con pool de threads\n\n")
 	fmt.Scan(&option)
 	fmt.Println("") 
+	//Crear listener
 	CONN_TYPE := "tcp"
 	CONN_HOST := "127.0.0.1"
 	CONN_PORT := "30000"
 	listener, err := net.Listen(CONN_TYPE, CONN_HOST+":"+CONN_PORT)
 	checkError(err)
+	//Lanzar servidor
 	switch option {
 	case 0:
 		secuentialServer(listener)
@@ -170,8 +208,6 @@ func main() {
 		threadedServer(listener)
 	case 2:
 		poolThreadedServer(listener)
-	case 3:
-		//añadir llamada a ./masterWorker
 	default:
 		panic("Error opción incorrecta")
 	}	
