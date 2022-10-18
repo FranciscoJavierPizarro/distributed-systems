@@ -9,9 +9,9 @@ import (
 
 
 func main() {
-	nProc := 20
 	numEscritores := 10
 	numLectores := 10
+	nProc := numEscritores + numLectores
 	espera := make(chan bool, nProc)
 	empezar := make(chan bool, nProc)
 	terminado := make(chan bool, nProc)
@@ -27,19 +27,19 @@ func main() {
 		log.Printf("lanzo lector con PID %d.", i)
 	}
 
-	for i := 0; i <= numEscritores; i++ { // m escritores
+	for i := 0 + numLectores; i < nProc; i++ { // m escritores
 		go escritor.Start(i + 1, nProc, empezar, espera, terminado, barreraFin)
 		log.Printf("lanzo escritor con PID %d.", i)
 	}
-	log.Println("llegue1")
+
 	for i := 0; i < nProc; i++ {
 		<-espera
 	}
-	log.Printf("llegue2")
+
 	for i := 0; i < nProc; i++ {
 		empezar <- true
 	}
-	log.Printf("llegue")
+	log.Printf("Barrera alcanzada")
 	for i := 0;i < nProc; i++ {
 		<-terminado
 	}

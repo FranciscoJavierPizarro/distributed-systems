@@ -51,7 +51,7 @@ func New(pid int, usersFile string, nProc int) (*RASharedDB) {
         HigSeqNum: 0, 
         OutRepCnt:  0, 
         ReqCS:      false, 
-        RepDefd:    []int{}, 
+        RepDefd:     make([]int, nProc),
         ms:         &msgs,  
         done:       make(chan bool),  
         Mutex:      sync.Mutex{},    
@@ -91,7 +91,7 @@ func (ra *RASharedDB) PreProtocol(op bool){
     request, govec.GetDefaultLogOptions())
 
     for i := 0; i < ra.nProc; i++ {
-		if (i != ra.OwnPid) {ra.ms.Send(i, goVecMessage)}
+		if (i != ra.OwnPid) {ra.ms.Send(i + 1, goVecMessage)}
 	}
 
     for i := 0; i < ra.OutRepCnt; i++ {
@@ -104,25 +104,30 @@ func (ra *RASharedDB) ReceiveRep() {
 	<-ra.chRep
 }
 
+func (ra *RASharedDB) processRequest(request Request) {
+    ra.Mutex.Lock()
+    if ra.HigSeqNum < request.Clock {ra.HigSeqNum = request.Clock}
+    exclusion := ra.writeOp || request.WriteOp
+    priority := (((request.Clock == ra.OurSeqNum) && (request.Pid < ra.OwnPid))||
+    (request.Clock > ra.OurSeqNum))
+    if (ra.ReqCS && priority && exclusion) {ra.RepDefd[request.Pid - 1] = 1
+    } else {ra.ms.Send(request.Pid, Reply{})}
+    ra.Mutex.Unlock()
+}
+
 //función que va recibiendo las peticiones y las va atendiendo
 func (ra *RASharedDB) ReceiveMsg() {
-	// var request Request
+	var request Request
 	for true {
-		// switch msg := ra.ms.Receive().(type) {
-        //     case Reply:
-        //         ra.chRep <- msg
-        //     case []byte:
-        //         ra.logger.UnpackReceive("Received request", msg,
-        //         &request, govec.GetDefaultLogOptions())
-        //         // Procesa la request
-        //         if ra.HigSeqNum < request.Clock {ra.HigSeqNum = request.Clock}
-        //         exclusion := ra.writeOp || request.WriteOp
-        //         priority := (((request.Clock == ra.OurSeqNum) && (request.Pid < ra.OwnPid))||
-        //         (request.Clock > ra.OurSeqNum))
-        //         if (ra.ReqCS && priority && exclusion) {ra.RepDefd[request.Pid] = 1
-        //         } else {ra.ms.Send(request.Pid, Reply{})}
-        //         ra.Mutex.Unlock()
-		// }
+		switch msg := ra.ms.Receive().(type) {
+            case Reply:
+                ra.chRep <- msg
+            case []byte:
+                ra.logger.UnpackReceive("Received request", msg,
+                &request, govec.GetDefaultLogOptions())
+                // Procesa la request
+                go ra.processRequest(request)
+		}
 	}
 }
 
@@ -140,7 +145,7 @@ func (ra *RASharedDB) PostProtocol(){
         //le respondemos y marcamos que ya le hemos respondido
 		if ra.RepDefd[i] == 1 {
 			ra.RepDefd[i] = 0
-			ra.ms.Send(i, reply)
+			ra.ms.Send(i + 1, reply)
 		}
 	}
 }
