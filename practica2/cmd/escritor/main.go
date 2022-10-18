@@ -1,8 +1,13 @@
-package main
+package escritor
 
 import (
 	"fmt"
 	"os"
+	"ra"
+	// "log"
+	// "math/rand"
+	// "strconv"
+	// "time"
 )
 
 
@@ -21,36 +26,31 @@ func WriteF(file string, text string) {
 	f.Close()
 }
 
-func start(pid int, nProc int,
+func Start(pid int, nProc int,
 	run chan bool, readyToRun chan bool,
 	end chan bool, endBarrier  []chan bool) {
-	ownRa := ra.New(pid, "users.txt", nProc)
+	ownRa := ra.New(pid, "lectores.txt", nProc)
 	go ownRa.ReceiveMsg()
 
-	// Barrera de inicialización
+	// // Barrera de inicialización
 	readyToRun <- true
 	<-run
-	for i := 0; i < 1000; i++ {
-		r := rand.Intn(1000)
-		time.Sleep(time.Duration(r) * time.Millisecond)
-		ownRa.PreProtocol(true)
+	// for i := 0; i < 1000; i++ {
+	// 	r := rand.Intn(1000)
+	// 	time.Sleep(time.Duration(r) * time.Millisecond)
+	// 	ownRa.PreProtocol(true)
 
-		log.Printf("soy el escritor %d, escribo en el fichero
-		 y mando peticiones.", pid%5)
-		WriteF("pachanga.txt"+  ".txt", "Hola, soy el proceso " + strconv.Itoa(pid)+"\n")
+	// 	log.Printf("soy el escritor %d, escribo en el fichero y mando peticiones.", pid%5)
+	// 	WriteF("pachanga.txt"+  ".txt", "Hola, soy el proceso " + strconv.Itoa(pid)+"\n")
 
-		ownRa.PostProtocol()
-	}
+	// 	ownRa.PostProtocol()
+	// }
 
-	// Barrera de fin
-	if (pid != nProc) <-endBarrier[pid-1]
-	if (pid != 1) endBarrier[pid-2] <- true
+	// // Barrera de fin
+	// if (pid != nProc) {<-endBarrier[pid-1]}
+	// if (pid != 1) {endBarrier[pid-2] <- true}
 
-	//ownRa.Stop() //bug
-	end <- true
+	// //ownRa.Stop() //bug
+	// end <- true
 }
 
-
-func main() {
-
-}

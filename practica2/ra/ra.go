@@ -27,9 +27,9 @@ type RASharedDB struct {
     OurSeqNum   int
     HigSeqNum   int
     OutRepCnt   int
-    ReqCS       boolean
-    RepDefd     int[]
-    ms          *MessageSystem
+    ReqCS       bool
+    RepDefd     []int
+    ms          *ms.MessageSystem
     done        chan bool
     //chrep       chan bool
     Mutex       sync.Mutex // mutex para proteger concurrencia sobre las variables
@@ -43,31 +43,29 @@ type RASharedDB struct {
 }
 
 
-func New(me int, usersFile string, nProc int) (*RASharedDB) {
-    messageTypes := []Message{Request, Reply}
-    msgs = ms.New(me, usersFile string, messageTypes)
+func New(pid int, usersFile string, nProc int) (*RASharedDB) {
+    messageTypes := []ms.Message{Request{}, Reply{}, []byte{}}
+    msgs := ms.New(pid, usersFile, messageTypes)
     ra := RASharedDB{
         OurSeqNum:  0, 
-        HighSeqNum: 0, 
+        HigSeqNum: 0, 
         OutRepCnt:  0, 
         ReqCS:      false, 
         RepDefd:    []int{}, 
         ms:         &msgs,  
         done:       make(chan bool),  
-        //make(chan bool), 
-        Mutex:      &sync.Mutex{}    
-        // TODO completar
-        OwnPid:     me,
+        Mutex:      sync.Mutex{},    
+        OwnPid:     pid,
         nProc:      nProc,
         chRep:      make(chan Reply, nProc),
-        writeOp:    false
+        writeOp:    false,
+        logger: govec.InitGoVector(strconv.Itoa(pid),
+		"LogFile"+strconv.Itoa(pid),	govec.GetDefaultConfig()),
         //Para ahorrarnos la matriz de exclusión en la que 
         //la única operación compatible con otra es lectura+lectura
         //simplemente usamos el valor writeOp que cuando es false es
         //lectura, realizando una OR sobre dicho operando obtenemos
         //la matriz de exclusión
-        logger: govec.InitGoVector(strconv.Itoa(me),
-		"LogFile"+strconv.Itoa(me),	govec.GetDefaultConfig()),
     }
     return &ra
 }
@@ -79,7 +77,7 @@ func (ra *RASharedDB) PreProtocol(op bool){
     // TODO completar
     ra.Mutex.Lock()
 	ra.ReqCS = true
-	ra.OurSeqNum = ra.HighSeqNum + 1
+	ra.OurSeqNum = ra.HigSeqNum + 1
 	ra.writeOp = op
 	ra.Mutex.Unlock()
     ra.OutRepCnt = ra.nProc - 1
@@ -92,11 +90,11 @@ func (ra *RASharedDB) PreProtocol(op bool){
     goVecMessage := ra.logger.PrepareSend("Send requests",
     request, govec.GetDefaultLogOptions())
 
-    for i := 1; i <= ra.n; i++ {
-		if (i != ra.OwnPid) ra.ms.Send(i, goVecMessage)
+    for i := 0; i < ra.nProc; i++ {
+		if (i != ra.OwnPid) {ra.ms.Send(i, goVecMessage)}
 	}
 
-    for i := ra.OutRepCnt; i > 0; i-- {
+    for i := 0; i < ra.OutRepCnt; i++ {
 		ra.ReceiveRep()
 	}
 }
@@ -108,23 +106,23 @@ func (ra *RASharedDB) ReceiveRep() {
 
 //función que va recibiendo las peticiones y las va atendiendo
 func (ra *RASharedDB) ReceiveMsg() {
-	var request Request
+	// var request Request
 	for true {
-		switch msg := ra.ms.Receive().(type) {
-            case Reply:
-                ra.chRep <- msg
-            default:
-                ra.logger.UnpackReceive("Received request", msg,
-                &request, govec.GetDefaultLogOptions())
-                // Procesa la request
-                if ra.HighSeqNum < request.Clock ra.HighSeqNum = request.Clock
-                exclusion := ra.writeOp || request.WriteOp
-                priority := (((request.Clock == ra.OurSeqNum) && (request.Pid < ra.OwnPid))||
-                (request.Clock > ra.OurSeqNum))
-                if (ra.ReqCS && priority && exclusion) ra.RepDefd[request.Pid-1] = 1
-                else ra.ms.Send(request.Pid, Reply{})
-                ra.Mutex.Unlock()
-		}
+		// switch msg := ra.ms.Receive().(type) {
+        //     case Reply:
+        //         ra.chRep <- msg
+        //     case []byte:
+        //         ra.logger.UnpackReceive("Received request", msg,
+        //         &request, govec.GetDefaultLogOptions())
+        //         // Procesa la request
+        //         if ra.HigSeqNum < request.Clock {ra.HigSeqNum = request.Clock}
+        //         exclusion := ra.writeOp || request.WriteOp
+        //         priority := (((request.Clock == ra.OurSeqNum) && (request.Pid < ra.OwnPid))||
+        //         (request.Clock > ra.OurSeqNum))
+        //         if (ra.ReqCS && priority && exclusion) {ra.RepDefd[request.Pid] = 1
+        //         } else {ra.ms.Send(request.Pid, Reply{})}
+        //         ra.Mutex.Unlock()
+		// }
 	}
 }
 
@@ -142,7 +140,7 @@ func (ra *RASharedDB) PostProtocol(){
         //le respondemos y marcamos que ya le hemos respondido
 		if ra.RepDefd[i] == 1 {
 			ra.RepDefd[i] = 0
-			ra.ms.Send(i, respuesta)
+			ra.ms.Send(i, reply)
 		}
 	}
 }
