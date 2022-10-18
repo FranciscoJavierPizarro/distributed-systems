@@ -30,8 +30,8 @@ func start(pid int, nProc int,
 		time.Sleep(time.Duration(r) * time.Millisecond)
 		ownRa.PreProtocol(false)
 
-		log.Println("PID:" + strconv.Itoa(pid) + ",OP:READ \n" +
-		lector.LeerReadF(strconv.Itoa(pid)+".txt"))
+		log.Println("PID:" + strconv.Itoa(pid%5) + ",OP:READ \n" +
+		lector.LeerReadF("pachanga.txt"))
 
 		ownRa.PostProtocol()
 	}
