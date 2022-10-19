@@ -26,12 +26,16 @@ func WriteF(file string, text string) {
 	f.Close()
 }
 
+func sincronize(ownRa *ra.RASharedDB) {
+	ownRa.SendSignal()
+	<-ownRa.Syncronized
+}
+
 func Start(pid int, nProc int) {
 	ownRa := ra.New(pid, "users.txt", nProc)
 	go ownRa.ReceiveMsg()
 
-	ownRa.SendSignal()
-	<-ownRa.Syncronized
+	sincronize(ownRa)
 
 	for i := 0; i < 15; i++ {
 		r := rand.Intn(500)
@@ -44,8 +48,7 @@ func Start(pid int, nProc int) {
 		ownRa.PostProtocol()
 	}
 
-	ownRa.SendSignal()
-	<-ownRa.Syncronized
+	sincronize(ownRa)
 			
 	log.Printf("Proceso %d end.", pid)
 	ownRa.Stop() //bug

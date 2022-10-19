@@ -21,12 +21,17 @@ func ReadF(file string) string {
 	return string(buffer)
 }
 
+func sincronize(ownRa *ra.RASharedDB) {
+	ownRa.SendSignal()
+	<-ownRa.Syncronized
+}
+
 func Start(pid int, nProc int) {
 	ownRa := ra.New(pid, "users.txt", nProc)
 	go ownRa.ReceiveMsg()
 
-	ownRa.SendSignal()
-	<-ownRa.Syncronized
+	sincronize(ownRa)
+
 	for i := 0; i < 15; i++ {
 		r := rand.Intn(500)
 		time.Sleep(time.Duration(r) * time.Millisecond)
@@ -38,10 +43,8 @@ func Start(pid int, nProc int) {
 		ownRa.PostProtocol()
 	}
 
+	sincronize(ownRa)
 
-	ownRa.SendSignal()
-	<-ownRa.Syncronized
-			
 	log.Printf("Process %d end.", pid)
 
 	ownRa.Stop() //bug
