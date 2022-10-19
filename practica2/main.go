@@ -33,8 +33,8 @@ func barrierSyncro(msgs ms.MessageSystem, nProc int, barrier chan bool) {
 //Enciende los workers
 func turnOnRemote(typeOfProc string, pid int, nProc int) {
 	//LLama a ./launchWorkers.sh
-	comm:= "./launchProcess.sh " + typeOfProc + " " +  strconv.Itoa(pid) + " " +  strconv.Itoa(nProc)
-	cmd := exec.Command(comm)
+	comm:= "./launchProcess.sh"
+	cmd := exec.Command(comm,typeOfProc,strconv.Itoa(pid),strconv.Itoa(nProc))
     err := cmd.Run()
     if err != nil {
 		panic(err)

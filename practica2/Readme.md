@@ -1,3 +1,14 @@
+# INSTRUCCIONES DEPLOY
+
+Utilizar un equipo del lab 1.02 cuya ssh key este autorizada para todos los demás
+Crear una carpeta llamada distri en el home
+En dicha carpeta debemos tener:
+1. users.txt
+2. ejecutables de main reader y writer
+3. launchProcess.sh
+4. tantos ficheros de ntexto como procesos haya llamados 1-nProc.txt
+Ejecutar desde dentro de dicha carpeta el main con flag remote
+
 #### Estructura RA
 
 Gestiona los mensajes con los demás procesos y el acceso a SC
