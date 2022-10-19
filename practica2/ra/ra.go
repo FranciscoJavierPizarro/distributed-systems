@@ -55,7 +55,7 @@ func New(pid int, usersFile string, nProc int) (*RASharedDB) {
         RepDefd:     make([]int, nProc),
         ms:         &msgs,  
         done:       make(chan bool),
-        Syncronized:make(chan bool),    
+        Syncronized:make(chan bool), 
         Mutex:      sync.Mutex{},    
         OwnPid:     pid,
         nProc:      nProc,

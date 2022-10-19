@@ -119,5 +119,3 @@ func (ms *MessageSystem) Stop() {
 type SyncSignal struct{}
 
 type SyncWait struct{}
-
-type EndSignal struct{}

@@ -21,8 +21,7 @@ func ReadF(file string) string {
 	return string(buffer)
 }
 
-func Start(pid int, nProc int,
-	end chan bool, readyToEnd  []chan bool) {
+func Start(pid int, nProc int) {
 	ownRa := ra.New(pid, "users.txt", nProc)
 	go ownRa.ReceiveMsg()
 
@@ -40,11 +39,10 @@ func Start(pid int, nProc int,
 	}
 
 
-	<-readyToEnd[pid-1]
-	if (pid != 1) {readyToEnd[pid-2] <- true
-	}else {end <- true}
+	ownRa.SendSignal()
+	<-ownRa.Syncronized
 			
 	log.Printf("Process %d end.", pid)
 
-	//ownRa.Stop() //bug
+	ownRa.Stop() //bug
 }
