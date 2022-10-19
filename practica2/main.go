@@ -8,14 +8,33 @@ import (
 	"ms"
 )
 
+func barrierSyncro(msgs ms.MessageSystem, nProc int, barrier chan bool) {
+	for i := 0; i < nProc; i++ {
+		switch msgs.Receive().(type) {
+			case ms.SyncSignal:
+				log.Println("Process ready to barrier.")
+			default:
+				log.Println(os.Stderr, "Error wrong comms to barrier.")
+				os.Exit(1)
+		}
+	}
+
+	for i := 0; i < nProc; i++ {
+		msgs.Send(i + 1, ms.SyncWait{})
+	}
+
+	barrier <- true
+}
+
 func main() {
 	numEscritores := 10
 	numLectores := 10
 	nProc := numEscritores + numLectores
 	messageTypes := []ms.Message{ms.SyncSignal{}, ms.SyncWait{}}
     msgs := ms.New(nProc + 1, "users.txt", messageTypes)
-	
+	barrier := make(chan bool)
 	log.Println("START")
+	go barrierSyncro(msgs,nProc,barrier)
 	for i := 0; i < nProc; i++ {
 		if(i < numLectores) {
 			go lector.Start(i + 1, nProc)
@@ -23,48 +42,10 @@ func main() {
 		log.Printf("Process launched with PID %d.", i)
 	}
 
+	<- barrier
+	log.Println("READY TO END")
 	//meter en hilo o problemas añadir canal
-	for i := 0; i < nProc; i++ {
-		switch msgs.Receive().(type) {
-			case ms.SyncSignal:
-				log.Println("Process ready to start.")
-			default:
-				log.Println(os.Stderr, "Error wrong comms to start.")
-				os.Exit(1)
-		}
-	}
-
-	for i := 0; i < nProc; i++ {
-		msgs.Send(i + 1, ms.SyncWait{})
-	}
-
-
-	// readyToEnd[nProc - 1] <- true
-	// msgs.Send(nProc, ms.EndSignal{})
-	log.Println("Ready to end")
-	// <-end
-	// switch msgs.Receive().(type) {
-	// 	case ms.EndSignal:
-	// 		log.Println("END")
-	// 	default:
-	// 		log.Println(os.Stderr, "Error wrong comms to end.")
-	// 		os.Exit(1)
-	// }
-
-
-	//meter en hilo o problemas añadir canal
-	for i := 0; i < nProc; i++ {
-		switch msgs.Receive().(type) {
-			case ms.SyncSignal:
-				log.Println("Process ready to start.")
-			default:
-				log.Println(os.Stderr, "Error wrong comms to start.")
-				os.Exit(1)
-		}
-	}
-
-	for i := 0; i < nProc; i++ {
-		msgs.Send(i + 1, ms.SyncWait{})
-	}
+	go barrierSyncro(msgs,nProc,barrier)
+	<- barrier
 	log.Println("END")
 }
