@@ -7,7 +7,6 @@ import (
 	"ra"
 	"log"
 	"math/rand"
-	"strconv"
 	"time"
 )
 
@@ -16,38 +15,37 @@ func ReadF(file string) string {
 	buffer, err := ioutil.ReadFile(file)
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error al leer el fichero.")
+		fmt.Fprintf(os.Stderr, "Error reading file.")
 		os.Exit(1)
 	}
 	return string(buffer)
 }
 
 func Start(pid int, nProc int,
-	run chan bool, readyToRun chan bool,
-	end chan bool, endBarrier  []chan bool) {
+	ready chan bool, wait chan bool,
+	end chan bool, readyToEnd  []chan bool) {
 	ownRa := ra.New(pid, "users.txt", nProc)
 	go ownRa.ReceiveMsg()
-	// // Barrera de inicialización
-	readyToRun <- true
-	<-run
+
+	wait <- true
+	<-ready
 	for i := 0; i < 15; i++ {
-		r := rand.Intn(1000)
+		r := rand.Intn(500)
 		time.Sleep(time.Duration(r) * time.Millisecond)
 		ownRa.PreProtocol(false)
 
-		log.Println("PID:" + strconv.Itoa(pid) + ",OP:READ \n" +
-		ReadF("pachanga.txt"))
+		log.Printf("Hi i am reader %d reading \n" +
+		ReadF("pachanga.txt"), pid)
 
 		ownRa.PostProtocol()
 	}
 
-	// Barrera de fin
-	if (pid != nProc) {
-		log.Printf("soy el proceso %d, y me bloqueo en la barrera.", pid)
-		<-endBarrier[pid-1]}
-	log.Printf("soy el proceso %d, y he recibido la barrera.", pid)
-	if (pid != 1) {endBarrier[pid-2] <- true}
+
+	<-readyToEnd[pid-1]
+	if (pid != 1) {readyToEnd[pid-2] <- true
+	}else {end <- true}
+			
+	log.Printf("Process %d end.", pid)
 
 	//ownRa.Stop() //bug
-	end <- true
 }
