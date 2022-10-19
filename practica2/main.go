@@ -29,24 +29,6 @@ func barrierSyncro(msgs ms.MessageSystem, nProc int, barrier chan bool) {
 	barrier <- true
 }
 
-func barrierSyncro2(msgs ms.MessageSystem, nProc int, barrier chan bool) {
-	for i := 0; i < nProc; i++ {
-		switch msgs.Receive().(type) {
-			case ms.SyncSignal:
-				log.Println("Process ENDBARRIER.")
-			default:
-				log.Println(os.Stderr, "Error wrong comms to barrier.")
-				os.Exit(1)
-		}
-	}
-
-	for i := 0; i < nProc; i++ {
-		msgs.Send(i + 1, ms.SyncWait{})
-	}
-
-	barrier <- true
-}
-
 
 //Enciende los workers
 func turnOnRemote(typeOfProc string, pid int, nProc int) {
@@ -93,8 +75,7 @@ func main() {
 
 	<- barrier
 	log.Println("READY TO END")
-	//meter en hilo o problemas añadir canal
-	go barrierSyncro2(msgs,nProc,barrier)
+	go barrierSyncro(msgs,nProc,barrier)
 	<- barrier
 	log.Println("END")
 }

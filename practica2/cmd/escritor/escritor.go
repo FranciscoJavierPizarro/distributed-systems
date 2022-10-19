@@ -33,21 +33,23 @@ func sincronize(ownRa *ra.RASharedDB) {
 
 func Start(pid int, nProc int) {
 	ownRa := ra.New(pid, "users.txt", nProc)
+	text:="Hi, i am writer " + strconv.Itoa(pid)+"\n"
 	go ownRa.ReceiveMsg()
 
 	sincronize(ownRa)
-
+	
 	for i := 0; i < 10; i++ {
 		r := rand.Intn(500)
 		time.Sleep(time.Duration(r) * time.Millisecond)
 		ownRa.PreProtocol(true)
 		
 		log.Printf("I am writer %d,writing on file.", pid)
-		WriteF("pachanga.txt", "Hi, i am writer " + strconv.Itoa(pid)+"\n")
-
+		WriteF(strconv.Itoa(pid)+".txt", text)
+		ownRa.UpdateFile(text)
+		ownRa.WaitConfirms()
 		ownRa.PostProtocol()
 	}
-	log.Printf("FIN %d", pid)
+
 	sincronize(ownRa)
 			
 	log.Printf("Proceso %d end.", pid)

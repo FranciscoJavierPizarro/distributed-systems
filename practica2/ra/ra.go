@@ -14,6 +14,8 @@ import (
     "github.com/DistributedClocks/GoVector/govec"
     "strconv"
     "log"
+    "fmt"
+    "os"
 )
 
 type Request struct{
@@ -21,6 +23,13 @@ type Request struct{
     Pid     int
     WriteOp bool
 }
+
+type TextToUpdate struct{
+    Pid  int
+    Text string
+}
+
+type AlreadyUpdated struct{}
 
 type Reply struct{}
 
@@ -33,6 +42,7 @@ type RASharedDB struct {
     ms          *ms.MessageSystem
     syncronized chan bool
     done        chan bool
+    confirm     chan bool
     //chrep       chan bool
     Mutex       sync.Mutex // mutex para proteger concurrencia sobre las variables
 
@@ -46,7 +56,7 @@ type RASharedDB struct {
 
 
 func New(pid int, usersFile string, nProc int) (*RASharedDB) {
-    messageTypes := []ms.Message{Request{}, Reply{}, ms.SyncSignal{}, ms.SyncWait{}, []byte{}}
+    messageTypes := []ms.Message{Request{}, Reply{}, ms.SyncSignal{}, ms.SyncWait{}, []byte{},TextToUpdate{},AlreadyUpdated{}}
     msgs := ms.New(pid, usersFile, messageTypes)
     ra := RASharedDB{
         OurSeqNum:  0, 
@@ -56,7 +66,8 @@ func New(pid int, usersFile string, nProc int) (*RASharedDB) {
         RepDefd:     make([]int, nProc),
         ms:         &msgs,  
         done:       make(chan bool),
-        syncronized:make(chan bool), 
+        syncronized:make(chan bool),
+        confirm:make(chan bool),  
         Mutex:      sync.Mutex{},    
         OwnPid:     pid,
         nProc:      nProc,
@@ -107,6 +118,10 @@ func (ra *RASharedDB) ReceiveRep() {
 	<-ra.chRep
 }
 
+func (ra *RASharedDB) ReceiveConfirm() {
+	<-ra.confirm
+}
+
 func (ra *RASharedDB) ReceiveSync() {
 	<-ra.syncronized
 }
@@ -129,6 +144,11 @@ func (ra *RASharedDB) ReceiveMsg() {
 		switch msg := ra.ms.Receive().(type) {
             case Reply:
                 ra.chRep <- msg
+            case AlreadyUpdated:
+                ra.confirm <- true
+            case TextToUpdate:
+                WriteF(strconv.Itoa(ra.OwnPid)+".txt",msg.Text)
+                ra.ms.Send(msg.Pid, AlreadyUpdated{})
             case ms.SyncWait:
                 ra.syncronized <- true
             case []byte:
@@ -169,4 +189,35 @@ func (ra *RASharedDB) PostProtocol(){
 func (ra *RASharedDB) Stop(){
     ra.ms.Stop()
     ra.done <- true
+}
+
+func (ra *RASharedDB) UpdateFile(text string) {
+    textToUpdate := TextToUpdate{
+    Text:text,
+    Pid:ra.OwnPid,
+    }
+    for i := 0; i < ra.nProc; i++ {
+		if (i != (ra.OwnPid - 1)) {ra.ms.Send(i + 1, textToUpdate)}
+	}
+}
+
+func (ra *RASharedDB) WaitConfirms() {
+    for i := 0; i < ra.nProc; i++ {
+		if (i != (ra.OwnPid - 1)) {ra.ReceiveConfirm()}
+	}
+}
+
+// Escribe en el fichero indicado un fragmento de texto al final del mismo
+func WriteF(file string, text string) {
+	f, err := os.OpenFile(file, os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error opening file.")
+		os.Exit(1)
+	}
+	_, err = f.WriteString(text)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error writing file.")
+		os.Exit(1)
+	}
+	f.Close()
 }

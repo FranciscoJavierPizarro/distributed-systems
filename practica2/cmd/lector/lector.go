@@ -8,6 +8,7 @@ import (
 	"log"
 	"math/rand"
 	"time"
+	"strconv"
 )
 
 //Función auxiliar de lectura de fichero
@@ -38,11 +39,11 @@ func Start(pid int, nProc int) {
 		ownRa.PreProtocol(false)
 
 		log.Printf("Hi i am reader %d reading \n" +
-		ReadF("pachanga.txt"), pid)
+		ReadF(strconv.Itoa(pid)+".txt"), pid)
 
 		ownRa.PostProtocol()
 	}
-	log.Printf("FIN %d", pid)
+
 	sincronize(ownRa)
 
 	log.Printf("Process %d end.", pid)
