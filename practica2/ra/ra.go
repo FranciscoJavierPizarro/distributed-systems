@@ -13,6 +13,7 @@ import (
     "sync"
     "github.com/DistributedClocks/GoVector/govec"
     "strconv"
+    "log"
 )
 
 type Request struct{
@@ -30,7 +31,7 @@ type RASharedDB struct {
     ReqCS       bool
     RepDefd     []int
     ms          *ms.MessageSystem
-    Syncronized chan bool
+    syncronized chan bool
     done        chan bool
     //chrep       chan bool
     Mutex       sync.Mutex // mutex para proteger concurrencia sobre las variables
@@ -55,7 +56,7 @@ func New(pid int, usersFile string, nProc int) (*RASharedDB) {
         RepDefd:     make([]int, nProc),
         ms:         &msgs,  
         done:       make(chan bool),
-        Syncronized:make(chan bool), 
+        syncronized:make(chan bool), 
         Mutex:      sync.Mutex{},    
         OwnPid:     pid,
         nProc:      nProc,
@@ -93,7 +94,7 @@ func (ra *RASharedDB) PreProtocol(op bool){
     request, govec.GetDefaultLogOptions())
 
     for i := 0; i < ra.nProc; i++ {
-		if (i != ra.OwnPid) {ra.ms.Send(i + 1, goVecMessage)}
+		if (i != (ra.OwnPid - 1)) {ra.ms.Send(i + 1, goVecMessage)}
 	}
 
     for i := 0; i < ra.OutRepCnt; i++ {
@@ -104,6 +105,10 @@ func (ra *RASharedDB) PreProtocol(op bool){
 //función auxiliar que recibe las respuestas
 func (ra *RASharedDB) ReceiveRep() {
 	<-ra.chRep
+}
+
+func (ra *RASharedDB) ReceiveSync() {
+	<-ra.syncronized
 }
 
 func (ra *RASharedDB) processRequest(request Request) {
@@ -120,17 +125,19 @@ func (ra *RASharedDB) processRequest(request Request) {
 //función que va recibiendo las peticiones y las va atendiendo
 func (ra *RASharedDB) ReceiveMsg() {
 	var request Request
-	for true {
+	for{
 		switch msg := ra.ms.Receive().(type) {
             case Reply:
                 ra.chRep <- msg
             case ms.SyncWait:
-                ra.Syncronized <- true
+                ra.syncronized <- true
             case []byte:
                 ra.logger.UnpackReceive("Received request", msg,
                 &request, govec.GetDefaultLogOptions())
                 // Procesa la request
                 go ra.processRequest(request)
+            default:
+                log.Printf("AYUDA")
 		}
 	}
 }
