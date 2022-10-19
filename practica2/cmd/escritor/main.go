@@ -27,13 +27,12 @@ func WriteF(file string, text string) {
 }
 
 func Start(pid int, nProc int,
-	ready chan bool, wait chan bool,
 	end chan bool, readyToEnd  []chan bool) {
 	ownRa := ra.New(pid, "users.txt", nProc)
 	go ownRa.ReceiveMsg()
 
-	wait <- true
-	<-ready
+	ownRa.SendSignal()
+	<-ownRa.Syncronized
 
 	for i := 0; i < 15; i++ {
 		r := rand.Intn(500)

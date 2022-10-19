@@ -115,3 +115,9 @@ func New(whoIam int, usersFile string, messageTypes []Message) (ms MessageSystem
 func (ms *MessageSystem) Stop() {
 	ms.done <- true
 }
+
+type SyncSignal struct{}
+
+type SyncWait struct{}
+
+type EndSignal struct{}

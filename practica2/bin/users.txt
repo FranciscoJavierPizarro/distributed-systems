@@ -18,3 +18,4 @@ localhost:4007
 localhost:4008
 localhost:4009
 localhost:4010
+localhost:7777

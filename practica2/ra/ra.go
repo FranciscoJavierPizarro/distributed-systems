@@ -30,6 +30,7 @@ type RASharedDB struct {
     ReqCS       bool
     RepDefd     []int
     ms          *ms.MessageSystem
+    Syncronized chan bool
     done        chan bool
     //chrep       chan bool
     Mutex       sync.Mutex // mutex para proteger concurrencia sobre las variables
@@ -44,7 +45,7 @@ type RASharedDB struct {
 
 
 func New(pid int, usersFile string, nProc int) (*RASharedDB) {
-    messageTypes := []ms.Message{Request{}, Reply{}, []byte{}}
+    messageTypes := []ms.Message{Request{}, Reply{}, ms.SyncSignal{}, ms.SyncWait{}, []byte{}}
     msgs := ms.New(pid, usersFile, messageTypes)
     ra := RASharedDB{
         OurSeqNum:  0, 
@@ -53,7 +54,8 @@ func New(pid int, usersFile string, nProc int) (*RASharedDB) {
         ReqCS:      false, 
         RepDefd:     make([]int, nProc),
         ms:         &msgs,  
-        done:       make(chan bool),  
+        done:       make(chan bool),
+        Syncronized:make(chan bool),    
         Mutex:      sync.Mutex{},    
         OwnPid:     pid,
         nProc:      nProc,
@@ -122,6 +124,8 @@ func (ra *RASharedDB) ReceiveMsg() {
 		switch msg := ra.ms.Receive().(type) {
             case Reply:
                 ra.chRep <- msg
+            case ms.SyncWait:
+                ra.Syncronized <- true
             case []byte:
                 ra.logger.UnpackReceive("Received request", msg,
                 &request, govec.GetDefaultLogOptions())
@@ -129,6 +133,11 @@ func (ra *RASharedDB) ReceiveMsg() {
                 go ra.processRequest(request)
 		}
 	}
+}
+
+//función que va recibiendo las peticiones y las va atendiendo
+func (ra *RASharedDB) SendSignal() {
+	ra.ms.Send(ra.nProc + 1, ms.SyncSignal{})
 }
 
 //Pre: Verdad
