@@ -1,4 +1,25 @@
+/*
+* Autores:
+*	Jorge Solán Morote NIA: 816259
+*	Francisco Javier Pizarro NIA:  821259
+* Fecha de última revisión:
+*	20/10/2022
+* Descripción del fichero:
+*	Contiene todo el código principal de un proceso escritor
+*	Crea la estructura de Ricart-Agrawala
+*	Se sincroniza con los demás procesos al empezar y acabar
+*	Itera entrando en SC usando el algoritmo de Ricart-Agrawala generalizado
+*	en cada iteración escribe nuevo contenido en el fichero
+* Descripción de la estructura del código:
+*	1. Importar paquetes 
+*	2. Funciones auxiliares del código principal de cada escritor
+*	3. Función START, la cual ejecuta un proceso escritor
+*/
 package escritor
+
+//====================================================================
+//	IMPORTS
+//====================================================================
 
 import (
 	"fmt"
@@ -10,6 +31,9 @@ import (
 	"time"
 )
 
+//====================================================================
+//	FUNCIONES AUXILIARES
+//====================================================================
 
 // Escribe en el fichero indicado un fragmento de texto al final del mismo
 func WriteF(file string, text string) {
@@ -30,6 +54,10 @@ func sincronize(ownRa *ra.RASharedDB) {
 	ownRa.SendSignal()
 	ownRa.ReceiveSync()
 }
+
+//====================================================================
+//	FUNCIÓN PRINCIPAL
+//====================================================================
 
 func Start(pid int, nProc int) {
 	ownRa := ra.New(pid, "users.txt", nProc)

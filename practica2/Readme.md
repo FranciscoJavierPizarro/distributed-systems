@@ -7,6 +7,8 @@ En dicha carpeta debemos tener:
 2. ejecutables de main reader y writer
 3. launchProcess.sh
 4. tantos ficheros de ntexto como procesos haya llamados 1-nProc.txt
+Modificar en fichero launchProcess.sh el user
+Modificar IPS de users.txt en base a equipos disponibles del lab
 Ejecutar desde dentro de dicha carpeta el main con flag remote
 
 #### Estructura RA

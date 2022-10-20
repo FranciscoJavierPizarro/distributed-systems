@@ -1,4 +1,25 @@
+/*
+* Autores:
+*	Jorge Solán Morote NIA: 816259
+*	Francisco Javier Pizarro NIA:  821259
+* Fecha de última revisión:
+*	20/10/2022
+* Descripción del fichero:
+*	Contiene todo el código principal de un proceso lector
+*	Crea la estructura de Ricart-Agrawala
+*	Se sincroniza con los demás procesos al empezar y acabar
+*	Itera entrando en SC usando el algoritmo de Ricart-Agrawala generalizado
+*	en cada iteración lee el contenido del fichero
+* Descripción de la estructura del código:
+*	1. Importar paquetes 
+*	2. Funciones auxiliares del código principal de cada lector
+*	3. Función START, la cual ejecuta un proceso lector
+*/
 package lector
+
+//====================================================================
+//	IMPORTS
+//====================================================================
 
 import (
 	"fmt"
@@ -10,6 +31,10 @@ import (
 	"time"
 	"strconv"
 )
+
+//====================================================================
+//	FUNCIONES AUXILIARES
+//====================================================================
 
 //Función auxiliar de lectura de fichero
 func ReadF(file string) string {
@@ -26,6 +51,10 @@ func sincronize(ownRa *ra.RASharedDB) {
 	ownRa.SendSignal()
 	ownRa.ReceiveSync()
 }
+
+//====================================================================
+//	FUNCIÓN PRINCIPAL
+//====================================================================
 
 func Start(pid int, nProc int) {
 	ownRa := ra.New(pid, "users.txt", nProc)
