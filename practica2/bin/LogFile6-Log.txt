@@ -1,0 +1,240 @@
+6 {"6":1}
+Initialization Complete
+6 {"6":2, "4":2}
+INFO Received request
+6 {"6":3, "4":2}
+INFO Respondo a solicitud SC
+6 {"6":4, "4":2, "1":4}
+INFO Received request
+6 {"6":5, "4":2, "1":4}
+INFO Respondo a solicitud SC
+6 {"6":6, "4":2, "1":4, "5":6}
+INFO Received request
+6 {"4":2, "1":4, "5":6, "6":7}
+INFO Respondo a solicitud SC
+6 {"6":8, "4":2, "1":8, "5":6}
+INFO Received request
+6 {"5":6, "6":9, "4":2, "1":8}
+INFO Respondo a solicitud SC
+6 {"1":8, "5":6, "6":10, "4":2}
+INFO Send requests
+6 {"6":11, "4":2, "1":8, "5":6}
+INFO Salgo de la SC
+6 {"6":12, "4":2, "1":8, "5":6, "3":12}
+INFO Received request
+6 {"5":6, "3":12, "6":13, "4":2, "1":8}
+INFO Respondo a solicitud SC
+6 {"6":14, "4":2, "1":8, "5":6, "3":14}
+INFO Received request
+6 {"6":15, "4":2, "1":8, "5":6, "3":14}
+INFO Respondo a solicitud SC
+6 {"5":6, "3":14, "2":16, "6":16, "4":2, "1":8}
+INFO Received request
+6 {"4":2, "1":8, "5":6, "3":14, "2":16, "6":17}
+INFO Respondo a solicitud SC
+6 {"4":2, "1":18, "5":6, "3":14, "2":16, "6":18}
+INFO Received request
+6 {"6":19, "4":2, "1":18, "5":6, "3":14, "2":16}
+INFO Respondo a solicitud SC
+6 {"6":20, "4":20, "1":18, "5":6, "3":14, "2":16}
+INFO Received request
+6 {"5":6, "3":14, "2":16, "6":21, "4":20, "1":18}
+INFO Respondo a solicitud SC
+6 {"6":22, "4":20, "1":18, "5":6, "3":14, "2":22}
+INFO Received request
+6 {"4":20, "1":18, "5":6, "3":14, "2":22, "6":23}
+INFO Respondo a solicitud SC
+6 {"6":24, "4":20, "1":18, "5":6, "3":14, "2":22}
+INFO Send requests
+6 {"1":18, "5":6, "3":14, "2":22, "6":25, "4":20}
+INFO Salgo de la SC
+6 {"4":20, "1":18, "5":26, "3":14, "2":22, "6":26}
+INFO Received request
+6 {"4":20, "1":18, "5":26, "3":14, "2":22, "6":27}
+INFO Respondo a solicitud SC
+6 {"2":22, "6":28, "4":20, "1":18, "5":26, "3":28}
+INFO Received request
+6 {"6":29, "4":20, "1":18, "5":26, "3":28, "2":22}
+INFO Respondo a solicitud SC
+6 {"6":30, "4":20, "1":30, "5":26, "3":28, "2":22}
+INFO Received request
+6 {"4":20, "1":30, "5":26, "3":28, "2":22, "6":31}
+INFO Respondo a solicitud SC
+6 {"1":30, "5":26, "3":32, "2":22, "6":32, "4":20}
+INFO Received request
+6 {"6":33, "4":20, "1":30, "5":26, "3":32, "2":22}
+INFO Respondo a solicitud SC
+6 {"6":34, "4":20, "1":30, "5":26, "3":32, "2":34}
+INFO Received request
+6 {"6":35, "4":20, "1":30, "5":26, "3":32, "2":34}
+INFO Respondo a solicitud SC
+6 {"2":36, "6":36, "4":20, "1":30, "5":26, "3":32}
+INFO Received request
+6 {"6":37, "4":20, "1":30, "5":26, "3":32, "2":36}
+INFO Respondo a solicitud SC
+6 {"6":38, "4":38, "1":30, "5":26, "3":32, "2":36}
+INFO Received request
+6 {"6":39, "4":38, "1":30, "5":26, "3":32, "2":36}
+INFO Respondo a solicitud SC
+6 {"2":36, "6":40, "4":38, "1":30, "5":40, "3":32}
+INFO Received request
+6 {"6":41, "4":38, "1":30, "5":40, "3":32, "2":36}
+INFO Respondo a solicitud SC
+6 {"6":42, "4":42, "1":30, "5":40, "3":32, "2":36}
+INFO Received request
+6 {"1":30, "5":40, "3":32, "2":36, "6":43, "4":42}
+INFO Respondo a solicitud SC
+6 {"6":44, "4":42, "1":30, "5":40, "3":32, "2":36}
+INFO Send requests
+6 {"6":45, "4":42, "1":30, "5":40, "3":32, "2":36}
+INFO Salgo de la SC
+6 {"3":32, "2":46, "6":46, "4":42, "1":30, "5":40}
+INFO Received request
+6 {"6":47, "4":42, "1":30, "5":40, "3":32, "2":46}
+INFO Respondo a solicitud SC
+6 {"4":48, "1":30, "5":40, "3":32, "2":46, "6":48}
+INFO Received request
+6 {"6":49, "4":48, "1":30, "5":40, "3":32, "2":46}
+INFO Respondo a solicitud SC
+6 {"3":32, "2":46, "6":50, "4":50, "1":30, "5":40}
+INFO Received request
+6 {"6":51, "4":50, "1":30, "5":40, "3":32, "2":46}
+INFO Respondo a solicitud SC
+6 {"5":40, "3":52, "2":46, "6":52, "4":50, "1":30}
+INFO Received request
+6 {"1":30, "5":40, "3":52, "2":46, "6":53, "4":50}
+INFO Respondo a solicitud SC
+6 {"1":54, "5":40, "3":52, "2":46, "6":54, "4":50}
+INFO Received request
+6 {"5":40, "3":52, "2":46, "6":55, "4":50, "1":54}
+INFO Respondo a solicitud SC
+6 {"6":56, "4":50, "1":56, "5":40, "3":52, "2":46}
+INFO Received request
+6 {"5":40, "3":52, "2":46, "6":57, "4":50, "1":56}
+INFO Respondo a solicitud SC
+6 {"1":56, "5":58, "3":52, "2":46, "6":58, "4":50}
+INFO Received request
+6 {"4":50, "1":56, "5":58, "3":52, "2":46, "6":59}
+INFO Respondo a solicitud SC
+6 {"6":60, "4":50, "1":56, "5":58, "3":52, "2":60}
+INFO Received request
+6 {"6":61, "4":50, "1":56, "5":58, "3":52, "2":60}
+INFO Respondo a solicitud SC
+6 {"2":60, "6":62, "4":50, "1":56, "5":58, "3":52}
+INFO Send requests
+6 {"1":56, "5":58, "3":52, "2":60, "6":63, "4":50}
+INFO Salgo de la SC
+6 {"3":52, "2":60, "6":64, "4":50, "1":64, "5":58}
+INFO Received request
+6 {"2":60, "6":65, "4":50, "1":64, "5":58, "3":52}
+INFO Respondo a solicitud SC
+6 {"1":64, "5":58, "3":66, "2":60, "6":66, "4":50}
+INFO Received request
+6 {"6":67, "4":50, "1":64, "5":58, "3":66, "2":60}
+INFO Respondo a solicitud SC
+6 {"6":68, "4":67, "1":64, "5":58, "3":66, "2":60}
+INFO Received request
+6 {"1":64, "5":58, "3":66, "2":60, "6":69, "4":67}
+INFO Respondo a solicitud SC
+6 {"5":58, "3":66, "2":60, "6":70, "4":67, "1":64}
+INFO Send requests
+6 {"6":71, "4":71, "1":64, "5":58, "3":66, "2":60}
+INFO Received request
+6 {"2":60, "6":72, "4":71, "1":64, "5":58, "3":66}
+INFO Salgo de la SC
+6 {"6":73, "4":71, "1":64, "5":58, "3":66, "2":74}
+INFO Received request
+6 {"6":74, "4":71, "1":64, "5":58, "3":66, "2":74}
+INFO Respondo a solicitud SC
+6 {"5":76, "3":66, "2":74, "6":75, "4":71, "1":64}
+INFO Received request
+6 {"6":76, "4":71, "1":64, "5":76, "3":66, "2":74}
+INFO Respondo a solicitud SC
+6 {"5":76, "3":66, "2":74, "6":77, "4":71, "1":76}
+INFO Received request
+6 {"4":71, "1":76, "5":76, "3":66, "2":74, "6":78}
+INFO Respondo a solicitud SC
+6 {"4":71, "1":76, "5":79, "3":66, "2":74, "6":79}
+INFO Received request
+6 {"2":74, "6":80, "4":71, "1":76, "5":79, "3":66}
+INFO Respondo a solicitud SC
+6 {"2":74, "6":81, "4":81, "1":76, "5":79, "3":66}
+INFO Received request
+6 {"3":66, "2":74, "6":82, "4":81, "1":76, "5":79}
+INFO Respondo a solicitud SC
+6 {"3":66, "2":74, "6":83, "4":83, "1":76, "5":79}
+INFO Received request
+6 {"6":84, "4":83, "1":76, "5":79, "3":66, "2":74}
+INFO Respondo a solicitud SC
+6 {"6":85, "4":83, "1":76, "5":79, "3":66, "2":86}
+INFO Received request
+6 {"1":76, "5":79, "3":66, "2":86, "6":86, "4":83}
+INFO Respondo a solicitud SC
+6 {"3":66, "2":86, "6":87, "4":83, "1":76, "5":86}
+INFO Received request
+6 {"4":83, "1":76, "5":86, "3":66, "2":86, "6":88}
+INFO Respondo a solicitud SC
+6 {"4":83, "1":76, "5":86, "3":90, "2":86, "6":89}
+INFO Received request
+6 {"4":83, "1":76, "5":86, "3":90, "2":86, "6":90}
+INFO Respondo a solicitud SC
+6 {"6":91, "4":83, "1":76, "5":86, "3":90, "2":86}
+INFO Send requests
+6 {"3":90, "2":86, "6":92, "4":83, "1":76, "5":86}
+INFO Salgo de la SC
+6 {"3":90, "2":86, "6":93, "4":83, "1":76, "5":92}
+INFO Received request
+6 {"3":90, "2":86, "6":94, "4":83, "1":76, "5":92}
+INFO Respondo a solicitud SC
+6 {"6":95, "4":83, "1":96, "5":92, "3":90, "2":86}
+INFO Received request
+6 {"6":96, "4":83, "1":96, "5":92, "3":90, "2":86}
+INFO Respondo a solicitud SC
+6 {"6":97, "4":83, "1":96, "5":92, "3":90, "2":98}
+INFO Received request
+6 {"6":98, "4":83, "1":96, "5":92, "3":90, "2":98}
+INFO Respondo a solicitud SC
+6 {"6":99, "4":83, "1":96, "5":98, "3":90, "2":98}
+INFO Received request
+6 {"6":100, "4":83, "1":100, "5":98, "3":90, "2":98}
+INFO Received request
+6 {"6":101, "4":83, "1":100, "5":98, "3":90, "2":98}
+INFO Respondo a solicitud SC
+6 {"3":90, "2":98, "6":102, "4":83, "1":100, "5":98}
+INFO Respondo a solicitud SC
+6 {"2":98, "6":103, "4":83, "1":100, "5":101, "3":90}
+INFO Received request
+6 {"6":104, "4":83, "1":100, "5":101, "3":90, "2":98}
+INFO Respondo a solicitud SC
+6 {"3":106, "2":98, "6":105, "4":83, "1":100, "5":101}
+INFO Received request
+6 {"3":106, "2":106, "6":106, "4":83, "1":100, "5":101}
+INFO Received request
+6 {"2":106, "6":107, "4":83, "1":100, "5":101, "3":106}
+INFO Respondo a solicitud SC
+6 {"6":108, "4":83, "1":100, "5":101, "3":106, "2":106}
+INFO Respondo a solicitud SC
+6 {"3":106, "2":106, "6":109, "4":83, "1":100, "5":101}
+INFO Send requests
+6 {"4":83, "1":100, "5":101, "3":106, "2":106, "6":110}
+INFO Salgo de la SC
+6 {"6":111, "4":83, "1":100, "5":101, "3":112, "2":106}
+INFO Received request
+6 {"5":101, "3":112, "2":106, "6":112, "4":83, "1":100}
+INFO Respondo a solicitud SC
+6 {"5":101, "3":114, "2":106, "6":113, "4":83, "1":100}
+INFO Received request
+6 {"2":106, "6":114, "4":83, "1":100, "5":101, "3":114}
+INFO Respondo a solicitud SC
+6 {"2":106, "6":115, "4":83, "1":100, "5":101, "3":114}
+INFO Send requests
+6 {"4":83, "1":100, "5":101, "3":114, "2":106, "6":116}
+INFO Salgo de la SC
+6 {"4":83, "1":100, "5":101, "3":114, "2":106, "6":117}
+INFO Send requests
+6 {"1":100, "5":101, "3":114, "2":106, "6":118, "4":83}
+INFO Salgo de la SC
+6 {"6":119, "4":83, "1":100, "5":101, "3":114, "2":106}
+INFO Send requests
+6 {"2":106, "6":120, "4":83, "1":100, "5":101, "3":114}
+INFO Salgo de la SC
