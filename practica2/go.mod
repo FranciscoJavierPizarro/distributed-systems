@@ -14,9 +14,12 @@ require (
 	escritor v0.0.0-00010101000000-000000000000
 	lector v0.0.0-00010101000000-000000000000
 	ms v0.0.0-00010101000000-000000000000
-	ra v0.0.0-00010101000000-000000000000 // indirect
-    github.com/DistributedClocks/GoVector v0.0.0-20210402100930-db949c81a0af // indirect
+)
+
+require (
+	github.com/DistributedClocks/GoVector v0.0.0-20210402100930-db949c81a0af // indirect
 	github.com/daviddengcn/go-colortext v1.0.0 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.1.4 // indirect
 	github.com/vmihailenco/tagparser v0.1.2 // indirect
+	ra v0.0.0-00010101000000-000000000000 // indirect
 )

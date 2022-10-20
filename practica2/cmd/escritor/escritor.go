@@ -35,7 +35,7 @@ import (
 //	FUNCIONES AUXILIARES
 //====================================================================
 
-// Escribe en el fichero indicado un fragmento de texto al final del mismo
+//Añade en el fichero el texto deseado
 func WriteF(file string, text string) {
 	f, err := os.OpenFile(file, os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
@@ -81,7 +81,7 @@ func Start(pid int, nProc int) {
 	sincronize(ownRa)
 			
 	log.Printf("Proceso %d end.", pid)
-	// ownRa.Stop() //bug
+	//ownRa.Stop() //bug
 	
 }
 

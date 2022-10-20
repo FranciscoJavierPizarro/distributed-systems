@@ -38,13 +38,13 @@ import (
 
 //Función auxiliar de lectura de fichero
 func ReadF(file string) string {
-	buffer, err := ioutil.ReadFile(file)
+	content, err := ioutil.ReadFile(file)
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error reading file.")
 		os.Exit(1)
 	}
-	return string(buffer)
+	return string(content)
 }
 
 func sincronize(ownRa *ra.RASharedDB) {
@@ -77,5 +77,5 @@ func Start(pid int, nProc int) {
 
 	log.Printf("Process %d end.", pid)
 
-	// ownRa.Stop() //bug
+	//ownRa.Stop() //bug
 }
