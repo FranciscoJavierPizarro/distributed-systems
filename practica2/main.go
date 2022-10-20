@@ -63,13 +63,13 @@ func barrierSyncro(msgs ms.MessageSystem, nProc int, barrier chan bool) {
 //LLama al script de lanzamiento remoto con los parámetros necesarios
 //para crear un escritor/lector remoto
 func turnOnRemote(typeOfProc string, pid int, nProc int) {
+	log.Printf("Launching process with PID %d.", pid)
 	comm:= "./launchProcess.sh"
 	cmd := exec.Command(comm,typeOfProc,strconv.Itoa(pid),strconv.Itoa(nProc))
     err := cmd.Run()
     if err != nil {
 		panic(err)
     }
-	log.Printf("Process launched with PID %d.", pid)
 	return
 }
 
