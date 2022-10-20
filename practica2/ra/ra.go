@@ -198,6 +198,7 @@ func (ra *RASharedDB) PreProtocol(op bool){
 //      Ricart-Agrawala Generalizado
 func (ra *RASharedDB) PostProtocol(){
     // TODO completar
+    ra.logger.LogLocalEvent("Salgo de la SC", govec.GetDefaultLogOptions())
     ra.Mutex.Lock()
 	ra.ReqCS = false
 	ra.Mutex.Unlock()
@@ -245,6 +246,9 @@ func (ra *RASharedDB) processRequest(request Request) {
     priority := (((request.Clock == ra.OurSeqNum) && (request.Pid < ra.OwnPid))||
     (request.Clock > ra.OurSeqNum))
     if (ra.ReqCS && priority && exclusion) {ra.RepDefd[request.Pid - 1] = 1
-    } else {ra.ms.Send(request.Pid, Reply{})}
+    } else {
+        ra.ms.Send(request.Pid, Reply{})
+        ra.logger.LogLocalEvent("Respondo a solicitud SC", govec.GetDefaultLogOptions())
+    }
     ra.Mutex.Unlock()
 }
