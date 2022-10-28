@@ -67,6 +67,23 @@ type AplicaOperacion struct {
 	Operacion TipoOperacion
 }
 
+type Log struct {
+	Term 	int
+	Command	string
+}
+
+type State Struct {
+	CurrentTerm int
+	VotedFor	int
+	Logs			Log[]
+	
+	CommitIndex	int
+	LastApplied	int
+
+	NextIndex	int[]
+	MatchIndex	int[]
+}
+
 // Tipo de dato Go que representa un solo nodo (réplica) de raft
 //
 type NodoRaft struct {
@@ -83,6 +100,7 @@ type NodoRaft struct {
 	// Vuestros datos aqui.
 	
 	// mirar figura 2 para descripción del estado que debe mantenre un nodo Raft
+	CurrentState State
 }
 
 
@@ -136,6 +154,17 @@ func NuevoNodo(nodos []rpctimeout.HostPort, yo int,
 	}
 
 	// Añadir codigo de inicialización
+	nr.CurrentState &= State{}
+
+	nr.CurrentState.CurrentTerm = 0
+	nr.CurrentState.VotedFor = nil
+	nr.CurrentState.Logs = make(Log)
+	
+	nr.CurrentState.CommitIndex = 0
+	nr.CurrentState.LastApplied = 0
+
+	nr.CurrentState.NextIndex = nil
+	nr.CurrentState.MatchIndex = nil
 	
 
 	return nr
@@ -247,24 +276,19 @@ func (nr *NodoRaft) SometerOperacionRaft(operacion TipoOperacion,
 // LLAMADAS RPC protocolo RAFT
 //
 // Structura de ejemplo de argumentos de RPC PedirVoto.
-//
-// Recordar
-// -----------
-// Nombres de campos deben comenzar con letra mayuscula !
-//
 type ArgsPeticionVoto struct {
 	// Vuestros datos aqui
+	Term 			int
+	CandidateId		int
+	LastLogIndex	int
+	LastLogTerm		int
 }
 
 // Structura de ejemplo de respuesta de RPC PedirVoto,
-//
-// Recordar
-// -----------
-// Nombres de campos deben comenzar con letra mayuscula !
-//
-//
 type RespuestaPeticionVoto struct {
 	// Vuestros datos aqui
+	Term			int
+	VoteGranted		bool
 }
 
 
@@ -273,17 +297,32 @@ type RespuestaPeticionVoto struct {
 func (nr *NodoRaft) PedirVoto(peticion *ArgsPeticionVoto,
 										reply *RespuestaPeticionVoto) error {
 	// Vuestro codigo aqui
-
+	*reply.Term = nr.CurrentState.CurrentTerm
+	if (peticion.Term < nr.CurrentState.CurrentTerm) {
+		*reply.VoteGranted = false
+	} else if ((nr.CurrentState.VotedFor == nil ||
+		peticion.CandidateId == nr.CurrentState.VotedFor)
+	 	&& (peticion.LastLogIndex >= nr.CurrentState.CommitIndex)) {
+		*reply.VoteGranted = true
+	}
 	return nil	
 }
 
 
 type ArgAppendEntries struct {
 	// Vuestros datos aqui
+	Term 			int
+	LeaderId		int
+	PrevLogIndex	int
+	PrevLogTerm		int
+	Entries			Log[]
+	LeaderCommit	int
 }
 
 type Results struct {
 	// Vuestros datos aqui
+	Term			int
+	Sucess			bool
 }
 
 
@@ -291,7 +330,13 @@ type Results struct {
 func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 													  results *Results) error {
 	// Completar....
-
+	if(args.Term < nr.CurrentState.CurrentTerm) {
+		&results.Sucess = false
+	} else if() {//log donesnt contait an entry
+		&results.Sucess = false
+	} else {
+		//Procesar logs y tal
+	}
 	return nil
 }
 
