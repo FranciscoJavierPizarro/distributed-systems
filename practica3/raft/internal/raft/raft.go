@@ -237,9 +237,8 @@ func (nr *NodoRaft) someterOperacion(operacion TipoOperacion) (int, int,
 	// Vuestro codigo aqui
 
 	if(EsLider) {
-		nr.CurrentState.Logs[len(nr.CurrentState.Logs)] = Log{nr.CurrentState.CurrentTerm, operacion}
+		//nr.Logs[len(nr.Logs)] = Log{nr.CurrentState.CurrentTerm, operacion}
 		//DEVOLVER EL VALOR?
-		time.Sleep(5000 * time.Millisecond)
 	}
 
 
@@ -528,29 +527,23 @@ func (nr *NodoRaft) lanzarPeticionesVotos() {
 }
 
 func (nr *NodoRaft) lanzarLatidos() {
+	args := ArgAppendEntries{
+		nr.CurrentState.CurrentTerm,
+		nr.Yo,
+		0,
+		0,
+		nil,
+		nr.CurrentState.CommitIndex,
+	}
 	var reply Results
 	for i := 0; i < len(nr.Nodos) ; i++ {
 		if(i != nr.Yo) {
-			args := ArgAppendEntries{
-				nr.CurrentState.CurrentTerm,
-				nr.Yo,
-				0,
-				0,
-				nil,
-				nr.CurrentState.CommitIndex,
-			}
-			if((nr.CurrentState.NextIndex[i] - nr.CurrentState.MatchIndex[i]) < len(nr.CurrentState.Logs)) {
-				args.Entries = nr.CurrentState.Logs[nr.CurrentState.MatchIndex[i]:nr.CurrentState.NextIndex[i]]
-			}
 			go func(i int, args ArgAppendEntries, reply Results) {
 				if(nr.enviarAppendEntries(i,&args,&reply)) {
-					nr.Logger.Println("Append enviado")
-					if(reply.Sucess) {
-						nr.CurrentState.MatchIndex[i] = nr.CurrentState.NextIndex[i]
-						nr.CurrentState.NextIndex[i] += 1
-					}
+					nr.Logger.Println("Latido enviado")
+					
 				} else {
-					nr.Logger.Println("Append fallido")
+					nr.Logger.Println("Latido fallido")
 				}
 			} (i,args,reply)
 		}
