@@ -28,14 +28,15 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	//"crypto/rand"
+	// "crypto/rand"
 	"sync"
 	"time"
 	//"net/rpc"
-
+	"math/rand"
 	"raft/internal/comun/rpctimeout"
 )
-
+const errorTime = 3
+const electionTime = 3
 
 const (
 	// Constante para fijar valor entero no inicializado
@@ -69,19 +70,21 @@ type AplicaOperacion struct {
 
 type Log struct {
 	Term 	int
-	Command	string
+	Operacion TipoOperacion
 }
 
-type State Struct {
+type State struct {
 	CurrentTerm int
 	VotedFor	int
-	Logs			Log[]
+	Logs			[]Log
 	
 	CommitIndex	int
 	LastApplied	int
 
-	NextIndex	int[]
-	MatchIndex	int[]
+	NextIndex	[]int
+	MatchIndex	[]int
+
+	Rol			string
 }
 
 // Tipo de dato Go que representa un solo nodo (réplica) de raft
@@ -101,6 +104,9 @@ type NodoRaft struct {
 	
 	// mirar figura 2 para descripción del estado que debe mantenre un nodo Raft
 	CurrentState State
+
+	StillAlive	chan bool
+	VoteRecivied chan bool
 }
 
 
@@ -152,21 +158,24 @@ func NuevoNodo(nodos []rpctimeout.HostPort, yo int,
 	} else {
 		nr.Logger = log.New(ioutil.Discard, "", 0)
 	}
-
+	nr.StillAlive = make(chan bool)
+	nr.VoteRecivied = make(chan bool)
 	// Añadir codigo de inicialización
-	nr.CurrentState &= State{}
+	nr.CurrentState = State{}
 
 	nr.CurrentState.CurrentTerm = 0
-	nr.CurrentState.VotedFor = nil
-	nr.CurrentState.Logs = make(Log)
+	nr.CurrentState.VotedFor = -1
+	nr.CurrentState.Logs = make([]Log,100)
 	
 	nr.CurrentState.CommitIndex = 0
 	nr.CurrentState.LastApplied = 0
 
-	nr.CurrentState.NextIndex = nil
-	nr.CurrentState.MatchIndex = nil
-	
+	nr.CurrentState.NextIndex = make([]int,len(nr.Nodos))
+	nr.CurrentState.MatchIndex = make([]int,len(nr.Nodos))
 
+	nr.CurrentState.Rol = "Seguidor"
+	
+	go nr.run(canalAplicarOperacion)
 	return nr
 }
 
@@ -189,11 +198,11 @@ func (nr *NodoRaft) para() {
 // Cuarto valor es el lider, es el indice del líder si no es él
 func (nr *NodoRaft) obtenerEstado() (int, int, bool, int) {
 	var yo int = nr.Yo
-	var mandato int
-	var esLider bool
+	var mandato int = nr.CurrentState.CurrentTerm
+	var esLider bool = nr.Yo == nr.IdLider
 	var idLider int =nr.IdLider
 	
-
+	nr.Logger.Printf("Estado actual %d %d %t %d",yo,mandato,esLider,idLider)
 	// Vuestro codigo aqui
 	
 
@@ -220,12 +229,20 @@ func (nr *NodoRaft) someterOperacion(operacion TipoOperacion) (int, int,
 															bool, int, string) {
 	indice := -1
 	mandato := -1
-	EsLider := false
-	idLider := -1
+	EsLider := nr.IdLider == nr.Yo
+	idLider := nr.IdLider
 	valorADevolver := ""
 	
 
 	// Vuestro codigo aqui
+
+	if(EsLider) {
+		nr.CurrentState.Logs[len(nr.CurrentState.Logs)] = Log{nr.CurrentState.CurrentTerm, operacion}
+		//DEVOLVER EL VALOR?
+		time.Sleep(5000 * time.Millisecond)
+	}
+
+
 	
 
 	return indice, mandato, EsLider, idLider, valorADevolver
@@ -240,6 +257,15 @@ type Vacio struct{}
 
 func (nr * NodoRaft) ParaNodo(args Vacio, reply *Vacio) error {
 	defer nr.para()
+	return nil
+}
+
+
+func (nr * NodoRaft) DejarLider(args Vacio, reply *Vacio) error {
+	nr.IdLider = -1
+	nr.CurrentState.VotedFor = -1
+	nr.CurrentState.Rol = "Seguidor"
+
 	return nil
 }
 
@@ -297,13 +323,17 @@ type RespuestaPeticionVoto struct {
 func (nr *NodoRaft) PedirVoto(peticion *ArgsPeticionVoto,
 										reply *RespuestaPeticionVoto) error {
 	// Vuestro codigo aqui
-	*reply.Term = nr.CurrentState.CurrentTerm
+	nr.Logger.Println("RPC PedirVoto called from other replica")
+
+	reply.Term = nr.CurrentState.CurrentTerm
 	if (peticion.Term < nr.CurrentState.CurrentTerm) {
-		*reply.VoteGranted = false
-	} else if ((nr.CurrentState.VotedFor == nil ||
-		peticion.CandidateId == nr.CurrentState.VotedFor)
-	 	&& (peticion.LastLogIndex >= nr.CurrentState.CommitIndex)) {
-		*reply.VoteGranted = true
+		reply.VoteGranted = false
+	} else if ((nr.CurrentState.VotedFor == -1 ||
+		peticion.CandidateId == nr.CurrentState.VotedFor) &&
+		(peticion.LastLogIndex >= nr.CurrentState.CommitIndex)) {
+		reply.VoteGranted = true
+		nr.CurrentState.VotedFor = peticion.CandidateId
+		nr.StillAlive <- true
 	}
 	return nil	
 }
@@ -315,7 +345,7 @@ type ArgAppendEntries struct {
 	LeaderId		int
 	PrevLogIndex	int
 	PrevLogTerm		int
-	Entries			Log[]
+	Entries			[]Log
 	LeaderCommit	int
 }
 
@@ -330,53 +360,199 @@ type Results struct {
 func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 													  results *Results) error {
 	// Completar....
+	nr.Logger.Println("RPC AppendEntries called from other replica")
 	if(args.Term < nr.CurrentState.CurrentTerm) {
-		&results.Sucess = false
-	} else if() {//log donesnt contait an entry
-		&results.Sucess = false
+		results.Sucess = false
+	} else if(nr.CurrentState.Logs[args.PrevLogIndex].Term != args.PrevLogTerm) {//log donesnt contait an entry
+		results.Sucess = false
 	} else {
 		//Procesar logs y tal
+		if(nr.CurrentState.Rol == "Candidato") {
+			nr.CurrentState.Rol = "Seguidor"
+		}
+		nr.IdLider = args.LeaderId
+		nr.CurrentState.VotedFor = -1
+		nr.StillAlive <- true
 	}
 	return nil
 }
 
 
-// ----- Metodos/Funciones a utilizar como clientes
-//
-//
 
-// Ejemplo de código enviarPeticionVoto
-//
-// nodo int -- indice del servidor destino en nr.nodos[]
-//
-// args *RequestVoteArgs -- argumentos par la llamada RPC
-//
-// reply *RequestVoteReply -- respuesta RPC
-//
-// Los tipos de argumentos y respuesta pasados a CallTimeout deben ser
-// los mismos que los argumentos declarados en el metodo de tratamiento
-// de la llamada (incluido si son punteros
-//
-// Si en la llamada RPC, la respuesta llega en un intervalo de tiempo,
-// la funcion devuelve true, sino devuelve false
-//
-// la llamada RPC deberia tener un timout adecuado.
-//
-// Un resultado falso podria ser causado por una replica caida,
-// un servidor vivo que no es alcanzable (por problemas de red ?),
-// una petición perdida, o una respuesta perdida
-//
-// Para problemas con funcionamiento de RPC, comprobar que la primera letra
-// del nombre  todo los campos de la estructura (y sus subestructuras)
-// pasadas como parametros en las llamadas RPC es una mayuscula,
-// Y que la estructura de recuperacion de resultado sea un puntero a estructura
-// y no la estructura misma.
-//
 func (nr *NodoRaft) enviarPeticionVoto(nodo int, args *ArgsPeticionVoto,
 											reply *RespuestaPeticionVoto) bool {
 	
 
-	// Completar....
+	err := nr.Nodos[nodo].CallTimeout("NodoRaft.PedirVoto", args, &reply, time.Second * errorTime)
+	return err == nil
+}
+
+
+func (nr *NodoRaft) enviarAppendEntries(nodo int, args *ArgAppendEntries,
+	reply *Results) bool {
+
+
+err := nr.Nodos[nodo].CallTimeout("NodoRaft.AppendEntries", args, &reply, time.Second * errorTime)
+return err == nil
+}
+
+
+func (nr *NodoRaft) run(canalAplicarOperacion chan AplicaOperacion) {
+	go nr.runCommonTasks(canalAplicarOperacion)
+	for {
+		
+		estado := nr.getState()
+		switch estado {
+		case "Seguidor":
+			nr.runSeguidor()
+		case "Candidato":
+			nr.runCandidato()
+		case "Lider":
+			nr.runLider()
+		}
+
+	}
+}
+
+func (nr *NodoRaft) runCommonTasks(canalAplicarOperacion chan AplicaOperacion) {
+	for {
+		if(nr.CurrentState.CommitIndex > nr.CurrentState.LastApplied) {
+			nr.CurrentState.LastApplied += 1
+			//canalAplicarOperacion <- nr.CurrentState.Logs[nr.CurrentState.LastApplied]
+			canalAplicarOperacion <- AplicaOperacion{}
+		}
+	}
+	//TODO
+	//TODO
+	//TODO
+
+	//añadir 2º regla general servidor que actualiza term y pasa a modo follower
+}
+
+func (nr *NodoRaft) runSeguidor() {
+	nr.Logger.Println("Now i am a follower")
+	s1 := rand.NewSource(time.Now().UnixNano())
+    r1 := rand.New(s1)
+	timeToChangeMode := time.Millisecond * time.Duration(1000 +(r1.Intn(2000)))
+	ticker := time.NewTicker(timeToChangeMode)
+	for nr.getState() == "Seguidor" {
+		select {
+		case <- nr.StillAlive:
+			//Reiniciar contador
+			ticker.Reset(timeToChangeMode)//¿?funcionara
+		case <- ticker.C:
+			//Convertirse a candidato 
+			ticker.Stop()
+			nr.CurrentState.Rol = "Candidato"
+		}
+	}
+}
+
+func (nr *NodoRaft) runCandidato() {
+	nr.Logger.Println("Now i am a candidate")
+	nr.CurrentState.CurrentTerm += 1
+	ticker := time.NewTicker(time.Second * electionTime)
+	nr.CurrentState.VotedFor = nr.Yo
+	for nr.getState() == "Candidato" {
+		votes := 1//se vota a si mismo
+		//enviar petición votos?
+		notTimeout := true
+		go nr.lanzarPeticionesVotos()
+		for !(votes >= ((len(nr.Nodos)/2) + 1)) && notTimeout{//proceso elección
+
+			select {
+			case <- nr.VoteRecivied:
+				nr.Logger.Println("Voto procesado")
+				//Sumar voto y comprobar mayoría
+				votes += 1
+				if(votes >= ((len(nr.Nodos)/2) + 1)) {
+					nr.Logger.Println("Voy a ser lider")
+					nr.Mux.Lock()
+					nr.IdLider = nr.Yo
+					nr.CurrentState.Rol = "Lider"
+					nr.Mux.Unlock()
+				}
+			case <- ticker.C:
+				//Reiniciar elección
+				ticker.Reset(time.Second * electionTime)
+				notTimeout = false
+			}
+		}
+	}
+}
+
+func (nr *NodoRaft) runLider() {
+	nr.Logger.Println("Now i am a leader")
+	s1 := rand.NewSource(time.Now().UnixNano())
+    r1 := rand.New(s1)
+	heartPulse := time.Millisecond * time.Duration(300+r1.Intn(500))
+	ticker := time.NewTicker(heartPulse)
 	
-	return true
+	for nr.getState() == "Lider" {
+		select {
+		case <- ticker.C:
+			nr.lanzarLatidos()//Enviar latidos
+		}
+	}
+	ticker.Stop()
+}
+
+
+func (nr *NodoRaft) getState() string {
+	return nr.CurrentState.Rol
+}
+
+func (nr *NodoRaft) lanzarPeticionesVotos() {
+	args := ArgsPeticionVoto{
+		nr.CurrentState.CurrentTerm,
+		nr.Yo,
+		nr.CurrentState.LastApplied,
+		nr.CurrentState.CurrentTerm,
+	}
+	var reply RespuestaPeticionVoto
+	for i := 0; i < len(nr.Nodos) ; i++ {
+		if(i != nr.Yo) {
+			go func(i int, args ArgsPeticionVoto, reply RespuestaPeticionVoto) {
+				if(nr.enviarPeticionVoto(i,&args,&reply)) {
+					nr.Logger.Println("Voto solicitado")
+					if (reply.VoteGranted) {
+						nr.Logger.Println("Voto recibido")
+						nr.VoteRecivied <- true
+					} else {nr.CurrentState.CurrentTerm = reply.Term}
+				} else {
+					nr.Logger.Println("Solicitud de voto fallido")
+				}
+			} (i,args,reply)
+		}
+	}
+}
+
+func (nr *NodoRaft) lanzarLatidos() {
+	var reply Results
+	for i := 0; i < len(nr.Nodos) ; i++ {
+		if(i != nr.Yo) {
+			args := ArgAppendEntries{
+				nr.CurrentState.CurrentTerm,
+				nr.Yo,
+				0,
+				0,
+				nil,
+				nr.CurrentState.CommitIndex,
+			}
+			if((nr.CurrentState.NextIndex[i] - nr.CurrentState.MatchIndex[i]) < len(nr.CurrentState.Logs)) {
+				args.Entries = nr.CurrentState.Logs[nr.CurrentState.MatchIndex[i]:nr.CurrentState.NextIndex[i]]
+			}
+			go func(i int, args ArgAppendEntries, reply Results) {
+				if(nr.enviarAppendEntries(i,&args,&reply)) {
+					nr.Logger.Println("Append enviado")
+					if(reply.Sucess) {
+						nr.CurrentState.MatchIndex[i] = nr.CurrentState.NextIndex[i]
+						nr.CurrentState.NextIndex[i] += 1
+					}
+				} else {
+					nr.Logger.Println("Append fallido")
+				}
+			} (i,args,reply)
+		}
+	}
 }

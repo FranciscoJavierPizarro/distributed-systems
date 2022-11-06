@@ -45,7 +45,7 @@ const (
 )
 
 // PATH de los ejecutables de modulo golang de servicio Raft
-var PATH string = filepath.Join(os.Getenv("HOME"), "tmp", "p3", "raft")
+var PATH string = filepath.Join(os.Getenv("HOME"), "Desktop", "distributed-systems","practica3", "raft")
 
 	// go run cmd/srvraft/main.go 0 127.0.0.1:29001 127.0.0.1:29002 127.0.0.1:29003
 var EXECREPLICACMD string = "cd " + PATH + "; go run " + EXECREPLICA
@@ -86,29 +86,29 @@ func TestPrimerasPruebas(t *testing.T) { // (m *testing.M) {
 
 
 // TEST primer rango
-func TestAcuerdosConFallos(t *testing.T) { // (m *testing.M) {
-	// <setup code>
-	// Crear canal de resultados de ejecuciones ssh en maquinas remotas
-	cfg := makeCfgDespliegue(t,
-							3,
-							[]string{REPLICA1, REPLICA2, REPLICA3},
-							[]bool{true, true, true})
+// func TestAcuerdosConFallos(t *testing.T) { // (m *testing.M) {
+// 	// <setup code>
+// 	// Crear canal de resultados de ejecuciones ssh en maquinas remotas
+// 	cfg := makeCfgDespliegue(t,
+// 							3,
+// 							[]string{REPLICA1, REPLICA2, REPLICA3},
+// 							[]bool{true, true, true})
 
-	// tear down code
-	// eliminar procesos en máquinas remotas
-	defer cfg.stop()
+// 	// tear down code
+// 	// eliminar procesos en máquinas remotas
+// 	defer cfg.stop()
 
-	// Test5: Se consigue acuerdo a pesar de desconexiones de seguidor
-	t.Run("T5:AcuerdoAPesarDeDesconexionesDeSeguidor ",
-		func(t *testing.T) { cfg.AcuerdoApesarDeSeguidor(t) })
+// 	// Test5: Se consigue acuerdo a pesar de desconexiones de seguidor
+// 	t.Run("T5:AcuerdoAPesarDeDesconexionesDeSeguidor ",
+// 		func(t *testing.T) { cfg.AcuerdoApesarDeSeguidor(t) })
 
-	t.Run("T5:SinAcuerdoPorFallos ",
-		func(t *testing.T) { cfg.SinAcuerdoPorFallos(t) })
+// 	t.Run("T5:SinAcuerdoPorFallos ",
+// 		func(t *testing.T) { cfg.SinAcuerdoPorFallos(t) })
 
-	t.Run("T5:SometerConcurrentementeOperaciones ",
-		func(t *testing.T) { cfg.SometerConcurrentementeOperaciones(t) })
+// 	t.Run("T5:SometerConcurrentementeOperaciones ",
+// 		func(t *testing.T) { cfg.SometerConcurrentementeOperaciones(t) })
 
-}
+// }
 
 
 // ---------------------------------------------------------------------
@@ -187,7 +187,7 @@ func (cfg *configDespliegue) soloArranqueYparadaTest1(t *testing.T) {
 
 // Primer lider en marcha - 3 NODOS RAFT
 func (cfg *configDespliegue) elegirPrimerLiderTest2(t *testing.T) {
-	t.Skip("SKIPPED ElegirPrimerLiderTest2")
+	// t.Skip("SKIPPED ElegirPrimerLiderTest2")
 
 	fmt.Println(t.Name(), ".....................")
 
@@ -206,7 +206,7 @@ func (cfg *configDespliegue) elegirPrimerLiderTest2(t *testing.T) {
 
 // Fallo de un primer lider y reeleccion de uno nuevo - 3 NODOS RAFT
 func (cfg *configDespliegue) falloAnteriorElegirNuevoLiderTest3(t *testing.T) {
-	t.Skip("SKIPPED FalloAnteriorElegirNuevoLiderTest3")
+	//t.Skip("SKIPPED FalloAnteriorElegirNuevoLiderTest3")
 
 	fmt.Println(t.Name(), ".....................")
 
@@ -218,6 +218,8 @@ func (cfg *configDespliegue) falloAnteriorElegirNuevoLiderTest3(t *testing.T) {
 
 	// Desconectar lider
 	// ???
+
+	cfg.quitarLider()
 
 	fmt.Printf("Comprobar nuevo lider\n")
 	cfg.pruebaUnLider(3)
@@ -380,5 +382,17 @@ func (cfg *configDespliegue) comprobarEstadoRemoto(idNodoDeseado int,
 	  cfg.t.Fatalf("Estado incorrecto en replica %d en subtest %s",
 													idNodoDeseado, cfg.t.Name())
 	}
+
+}
+
+//apaga el lider actual
+func (cfg *configDespliegue) quitarLider() {
+	var reply raft.Vacio
+
+	time.Sleep(500 * time.Millisecond)
+	_,_, _, idLider := cfg.obtenerEstadoRemoto(0)
+	err := cfg.nodosRaft[idLider].CallTimeout("NodoRaft.DejarLider",
+	raft.Vacio{}, &reply, 10 * time.Millisecond)
+	check.CheckError(err, "Error en llamada RPC Para nodo")
 
 }
