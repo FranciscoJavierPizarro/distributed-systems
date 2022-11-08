@@ -1,39 +1,47 @@
-127.0.0.1_29003 -> 17:28:57.817795 raft.go:158: logger initialized
-127.0.0.1_29003 -> 17:28:57.817909 raft.go:474: Now i am a follower
-127.0.0.1_29003 -> 17:28:58.489978 raft.go:212: Estado actual 2 0 false -1
-127.0.0.1_29003 -> 17:28:58.992081 raft.go:212: Estado actual 2 0 false -1
-127.0.0.1_29003 -> 17:28:59.493810 raft.go:212: Estado actual 2 0 false -1
-127.0.0.1_29003 -> 17:28:59.884487 raft.go:340: RPC PedirVoto called from other replica
-127.0.0.1_29003 -> 17:28:59.884842 raft.go:383: HeartPulse recivied
-127.0.0.1_29003 -> 17:28:59.884871 raft.go:415: RPC done
-127.0.0.1_29003 -> 17:28:59.995698 raft.go:212: Estado actual 2 0 false 1
-127.0.0.1_29003 -> 17:29:00.291843 raft.go:386: RPC AppendEntries called from other replica
-127.0.0.1_29003 -> 17:29:00.291865 raft.go:415: RPC done
-127.0.0.1_29003 -> 17:29:00.697768 raft.go:383: HeartPulse recivied
-127.0.0.1_29003 -> 17:29:00.697789 raft.go:415: RPC done
-127.0.0.1_29003 -> 17:29:01.104051 raft.go:386: RPC AppendEntries called from other replica
-127.0.0.1_29003 -> 17:29:01.104071 raft.go:415: RPC done
-127.0.0.1_29003 -> 17:29:01.509105 raft.go:383: HeartPulse recivied
-127.0.0.1_29003 -> 17:29:01.509132 raft.go:415: RPC done
-127.0.0.1_29003 -> 17:29:01.915046 raft.go:386: RPC AppendEntries called from other replica
-127.0.0.1_29003 -> 17:29:01.915075 raft.go:415: RPC done
-127.0.0.1_29003 -> 17:29:02.322204 raft.go:383: HeartPulse recivied
-127.0.0.1_29003 -> 17:29:02.322231 raft.go:415: RPC done
-127.0.0.1_29003 -> 17:29:02.727268 raft.go:386: RPC AppendEntries called from other replica
-127.0.0.1_29003 -> 17:29:02.727291 raft.go:415: RPC done
-127.0.0.1_29003 -> 17:29:03.133488 raft.go:383: HeartPulse recivied
-127.0.0.1_29003 -> 17:29:03.133513 raft.go:415: RPC done
-127.0.0.1_29003 -> 17:29:03.135071 raft.go:644: Log enviado:iteracion0
-127.0.0.1_29003 -> 17:29:03.135484 raft.go:644: Log enviado:iteracion1
-127.0.0.1_29003 -> 17:29:03.135738 raft.go:644: Log enviado:iteracion2
-127.0.0.1_29003 -> 17:29:03.140297 raft.go:644: Log enviado:iteracion3
-127.0.0.1_29003 -> 17:29:03.540087 raft.go:383: HeartPulse recivied
-127.0.0.1_29003 -> 17:29:03.540106 raft.go:415: RPC done
-127.0.0.1_29003 -> 17:29:03.946019 raft.go:383: HeartPulse recivied
-127.0.0.1_29003 -> 17:29:03.946048 raft.go:415: RPC done
-127.0.0.1_29003 -> 17:29:04.352223 raft.go:383: HeartPulse recivied
-127.0.0.1_29003 -> 17:29:04.352239 raft.go:415: RPC done
-127.0.0.1_29003 -> 17:29:04.645083 raft.go:644: Log enviado:iteracion0
-127.0.0.1_29003 -> 17:29:04.645521 raft.go:644: Log enviado:iteracion1
-127.0.0.1_29003 -> 17:29:04.645743 raft.go:644: Log enviado:iteracion2
-127.0.0.1_29003 -> 17:29:04.645976 raft.go:644: Log enviado:iteracion3
+127.0.0.1_29003 -> 18:42:39.887702 raft.go:158: logger initialized
+127.0.0.1_29003 -> 18:42:39.887806 raft.go:474: Now i am a follower
+127.0.0.1_29003 -> 18:42:40.541641 raft.go:212: Estado actual 2 0 false -1
+127.0.0.1_29003 -> 18:42:41.043238 raft.go:212: Estado actual 2 0 false -1
+127.0.0.1_29003 -> 18:42:41.269607 raft.go:340: RPC PedirVoto called from other replica
+127.0.0.1_29003 -> 18:42:41.270030 raft.go:383: HeartPulse recivied
+127.0.0.1_29003 -> 18:42:41.270045 raft.go:415: RPC done
+127.0.0.1_29003 -> 18:42:41.544381 raft.go:212: Estado actual 2 0 false 1
+127.0.0.1_29003 -> 18:42:41.924128 raft.go:386: RPC AppendEntries called from other replica
+127.0.0.1_29003 -> 18:42:41.924146 raft.go:415: RPC done
+127.0.0.1_29003 -> 18:42:42.576474 raft.go:383: HeartPulse recivied
+127.0.0.1_29003 -> 18:42:42.576500 raft.go:415: RPC done
+127.0.0.1_29003 -> 18:42:42.577132 raft.go:651: LOGS:
+127.0.0.1_29003 -> 18:42:42.577149 raft.go:653: iteracion0
+127.0.0.1_29003 -> 18:42:42.577156 raft.go:646: Log enviado:iteracion0
+127.0.0.1_29003 -> 18:42:42.577895 raft.go:658: PAUSED
+127.0.0.1_29003 -> 18:42:45.450319 raft.go:547: Now i am in pause
+127.0.0.1_29003 -> 18:42:48.581294 raft.go:664: CONTINUE
+127.0.0.1_29003 -> 18:42:48.581397 raft.go:474: Now i am a follower
+127.0.0.1_29003 -> 18:42:49.106622 raft.go:386: RPC AppendEntries called from other replica
+127.0.0.1_29003 -> 18:42:49.106647 raft.go:415: RPC done
+127.0.0.1_29003 -> 18:42:49.760109 raft.go:383: HeartPulse recivied
+127.0.0.1_29003 -> 18:42:49.760195 raft.go:415: RPC done
+127.0.0.1_29003 -> 18:42:50.084197 raft.go:651: LOGS:
+127.0.0.1_29003 -> 18:42:50.084218 raft.go:653: iteracion0
+127.0.0.1_29003 -> 18:42:50.084226 raft.go:653: iteracion1
+127.0.0.1_29003 -> 18:42:50.084231 raft.go:653: iteracion2
+127.0.0.1_29003 -> 18:42:50.084239 raft.go:653: iteracion3
+127.0.0.1_29003 -> 18:42:50.084244 raft.go:646: Log enviado:iteracion0
+127.0.0.1_29003 -> 18:42:50.084716 raft.go:651: LOGS:
+127.0.0.1_29003 -> 18:42:50.084731 raft.go:653: iteracion0
+127.0.0.1_29003 -> 18:42:50.084738 raft.go:653: iteracion1
+127.0.0.1_29003 -> 18:42:50.084743 raft.go:653: iteracion2
+127.0.0.1_29003 -> 18:42:50.084748 raft.go:653: iteracion3
+127.0.0.1_29003 -> 18:42:50.084753 raft.go:646: Log enviado:iteracion1
+127.0.0.1_29003 -> 18:42:50.090338 raft.go:651: LOGS:
+127.0.0.1_29003 -> 18:42:50.090358 raft.go:653: iteracion0
+127.0.0.1_29003 -> 18:42:50.090365 raft.go:653: iteracion1
+127.0.0.1_29003 -> 18:42:50.090370 raft.go:653: iteracion2
+127.0.0.1_29003 -> 18:42:50.090375 raft.go:653: iteracion3
+127.0.0.1_29003 -> 18:42:50.090381 raft.go:646: Log enviado:iteracion2
+127.0.0.1_29003 -> 18:42:50.092355 raft.go:651: LOGS:
+127.0.0.1_29003 -> 18:42:50.092373 raft.go:653: iteracion0
+127.0.0.1_29003 -> 18:42:50.092380 raft.go:653: iteracion1
+127.0.0.1_29003 -> 18:42:50.092385 raft.go:653: iteracion2
+127.0.0.1_29003 -> 18:42:50.092390 raft.go:653: iteracion3
+127.0.0.1_29003 -> 18:42:50.092395 raft.go:646: Log enviado:iteracion3

@@ -484,7 +484,9 @@ func (nr *NodoRaft) runSeguidor() {
 		case <- ticker.C:
 			//Convertirse a candidato 
 			ticker.Stop()
-			nr.CurrentState.Rol = "Candidato"
+			if (nr.getState() != "Pausa") {
+				nr.CurrentState.Rol = "Candidato"
+			}
 		}
 	}
 }
@@ -506,7 +508,7 @@ func (nr *NodoRaft) runCandidato() {
 				nr.Logger.Println("Voto procesado")
 				//Sumar voto y comprobar mayoría
 				votes += 1
-				if(votes >= ((len(nr.Nodos)/2) + 1)) {
+				if(votes >= ((len(nr.Nodos)/2) + 1) && nr.getState() != "Pausa") {
 					nr.Logger.Println("Voy a ser lider")
 					nr.Mux.Lock()
 					nr.IdLider = nr.Yo
@@ -635,7 +637,7 @@ func (nr *NodoRaft) lanzarLatidos() {
 
 func (nr *NodoRaft) ObtenerRegistro(args int,
 	reply *string) error {
-		//nr.printLogs()
+	nr.printLogs()
 	if(nr.getState() == "Pausa") {
 		for(nr.getState() == "Pausa") {}
 		return nil
@@ -662,4 +664,14 @@ func (nr *NodoRaft) QuitarPausa(args Vacio, reply *Vacio) error {
 	nr.Logger.Println("CONTINUE")
 	nr.CurrentState.Rol = "Seguidor"
 	return nil
+}
+
+func (nr *NodoRaft) ObtenerCompromiso(args Vacio,
+	reply *[]int) error {
+	*reply = []int{
+		len(nr.CurrentState.Logs),
+		nr.CurrentState.CommitIndex,
+	}
+	nr.Logger.Println("Situacion de compromiso enviada")
+return nil
 }

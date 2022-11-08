@@ -103,8 +103,8 @@ func TestAcuerdosConFallos(t *testing.T) { // (m *testing.M) {
 	t.Run("T5:AcuerdoAPesarDeDesconexionesDeSeguidor ",
 		func(t *testing.T) { cfg.AcuerdoApesarDeSeguidor(t) })
 
-	// t.Run("T5:SinAcuerdoPorFallos ",
-	// 	func(t *testing.T) { cfg.SinAcuerdoPorFallos(t) })
+	t.Run("T5:SinAcuerdoPorFallos ",
+		func(t *testing.T) { cfg.SinAcuerdoPorFallos(t) })
 
 	// t.Run("T5:SometerConcurrentementeOperaciones ",
 	// 	func(t *testing.T) { cfg.SometerConcurrentementeOperaciones(t) })
@@ -324,7 +324,7 @@ func(cfg *configDespliegue) AcuerdoApesarDeSeguidor(t *testing.T) {
 		fmt.Printf("Logs obtenidos del nodo %d\n",i)
 	}
 
-	for i := 0; i < len(logs[0]); i++ {
+	for i := 0; i < len(logs[idLider]); i++ {
 		if(logs[0][i] != logs[1][i] || logs[0][i] != logs[2][i]) {
 			panic("logs distintos")
 		}
@@ -340,18 +340,76 @@ func(cfg *configDespliegue) AcuerdoApesarDeSeguidor(t *testing.T) {
 
 // NO se consigue acuerdo al desconectarse mayoría de seguidores -- 3 NODOS RAFT
 func(cfg *configDespliegue) SinAcuerdoPorFallos(t *testing.T) {
-	t.Skip("SKIPPED SinAcuerdoPorFallos")
+	//t.Skip("SKIPPED SinAcuerdoPorFallos")
 
-	// A completar ???
+	fmt.Println(t.Name(), ".....................")
+
+	cfg.startDistributedProcesses()
+
+	cfg.pruebaUnLider(3)
+	_, _, _, idLider := cfg.obtenerEstadoRemoto(0)
+	fmt.Printf("Lider:%d\n",idLider)
 
 	// Comprometer una entrada
+	cfg.someterOperacion(idLider,0)
+	fmt.Println("Operación sometida")
 
+	logs := [][]string{}
+	for i:= 0 ; i <3 ; i++ {
+		logs = append(logs,nil)
+		logs[i] = cfg.obtenerRegistro(i,1)
+		fmt.Printf("Logs obtenidos del nodo %d\n",i)
+	}
+
+	for i := 0; i < len(logs[idLider]); i++ {
+		if(logs[0][i] != logs[1][i] || logs[0][i] != logs[2][i]) {
+			panic("logs distintos")
+		}
+		fmt.Println(logs[0][i] + " " + logs[1][i] + " " + logs[2][i] + " ")
+	}
 	//  Obtener un lider y, a continuación desconectar 2 de los nodos Raft
-
+	_, _, _, idLider = cfg.obtenerEstadoRemoto(0)
+	for i:= 0; i < 3; i++ {
+		if (i!= idLider) {
+			cfg.PonerPausa(i)
+		}
+	}
 
 	// Comprobar varios acuerdos con 2 réplicas desconectada
-
+	for i:= 1 ; i <4 ; i++ {
+		if(cfg.someterOperacion(idLider,i)) {
+			fmt.Println("Operación sometida")
+		} else {
+			fmt.Println("Operación sometida pero no comprometida")
+		}
+	}
+	cfg.obtenerCompromiso(idLider)
 	// reconectar lo2 nodos Raft  desconectados y probar varios acuerdos
+
+	for i:= 0; i < 3; i++ {
+		if (i!= idLider) {
+			cfg.QuitarPausa(i)
+		}
+	}
+
+	time.Sleep(1500 * time.Millisecond)
+	logs = [][]string{}
+	for i:= 0 ; i <3 ; i++ {
+		logs = append(logs,nil)
+		logs[i] = cfg.obtenerRegistro(i,4)
+		fmt.Printf("Logs obtenidos del nodo %d\n",i)
+	}
+	for i := 0; i < len(logs[idLider]); i++ {
+		if(logs[0][i] != logs[1][i] || logs[0][i] != logs[2][i]) {
+			panic("logs distintos")
+		}
+		fmt.Println(logs[0][i] + " " + logs[1][i] + " " + logs[2][i] + " ")
+	}
+
+	// Parar réplicas almacenamiento en remoto
+	cfg.stopDistributedProcesses()  //parametros
+
+	fmt.Println(".............", t.Name(), "Superado")
 }
 
 // Se somete 5 operaciones de forma concurrente -- 3 NODOS RAFT
@@ -482,13 +540,13 @@ func (cfg *configDespliegue) quitarLider() {
 }
 
 func (cfg *configDespliegue) someterOperacion(
-	indiceNodo int, iteracion int) {
+	indiceNodo int, iteracion int) (bool){
 	operacion := raft.TipoOperacion{"iteracion" + strconv.Itoa(iteracion),"aa","a"}
 	var reply raft.ResultadoRemoto
 	err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.SometerOperacionRaft",
 	operacion, &reply, 2000 * time.Millisecond)
-	check.CheckError(err, "Error en llamada RPC SometerOperacion")
-	return
+	// check.CheckError(err, "Error en llamada RPC SometerOperacion")
+	return err == nil
 }
 
 func (cfg *configDespliegue) obtenerRegistro(indiceNodo int,n int) ([]string){
@@ -496,7 +554,7 @@ func (cfg *configDespliegue) obtenerRegistro(indiceNodo int,n int) ([]string){
 	var reply string
 	for i:=0; i< n; i++ {
 		err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.ObtenerRegistro",
-		i, &reply, 10 * time.Millisecond)
+		i, &reply, 15 * time.Millisecond)
 		check.CheckError(err, "Error en llamada RPC obtener registro")
 		results = append(results,reply)
 	}
@@ -508,8 +566,8 @@ func (cfg *configDespliegue) PonerPausa(
 	vacio:= raft.Vacio{}
 	var reply raft.Vacio
 	err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.PonerPausa",
-	vacio, &reply, 10 * time.Millisecond)
-	check.CheckError(err, "Error en llamada RPC SometerOperacion")
+	vacio, &reply, 15 * time.Millisecond)
+	check.CheckError(err, "Error en llamada RPC PonerPausa")
 	return
 }
 
@@ -518,7 +576,18 @@ func (cfg *configDespliegue) QuitarPausa(
 	vacio:= raft.Vacio{}
 	var reply raft.Vacio
 	err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.QuitarPausa",
-	vacio, &reply, 10 * time.Millisecond)
-	check.CheckError(err, "Error en llamada RPC SometerOperacion")
+	vacio, &reply, 15 * time.Millisecond)
+	check.CheckError(err, "Error en llamada RPC QuitarPausa")
+	return
+}
+
+func (cfg *configDespliegue) obtenerCompromiso(
+	indiceNodo int) {
+	vacio := raft.Vacio{}
+	var reply []int
+	err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.ObtenerCompromiso",
+	vacio, &reply, 100 * time.Millisecond)
+	check.CheckError(err, "Error en llamada RPC ObtenerCompromiso")
+	fmt.Printf("Nlogs: %d, CommitIndex: %d\n",reply[0],reply[1])
 	return
 }
