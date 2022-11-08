@@ -1,25 +1,24 @@
-127.0.0.1_29002 -> 09:09:26.753606 raft.go:157: logger initialized
-127.0.0.1_29002 -> 09:09:26.753855 raft.go:450: Now i am a follower
-127.0.0.1_29002 -> 09:09:28.194250 raft.go:469: Now i am a candidate
-127.0.0.1_29002 -> 09:09:28.195619 raft.go:536: Voto solicitado
-127.0.0.1_29002 -> 09:09:28.195643 raft.go:538: Voto recibido
-127.0.0.1_29002 -> 09:09:28.195654 raft.go:482: Voto procesado
-127.0.0.1_29002 -> 09:09:28.195664 raft.go:486: Voy a ser lider
-127.0.0.1_29002 -> 09:09:28.195672 raft.go:504: Now i am a leader
-127.0.0.1_29002 -> 09:09:28.195804 raft.go:536: Voto solicitado
-127.0.0.1_29002 -> 09:09:28.195817 raft.go:538: Voto recibido
-127.0.0.1_29002 -> 09:09:28.648975 raft.go:571: Append enviado
-127.0.0.1_29002 -> 09:09:28.648998 raft.go:576: Append correcto
-127.0.0.1_29002 -> 09:09:28.649008 raft.go:571: Append enviado
-127.0.0.1_29002 -> 09:09:28.649049 raft.go:576: Append correcto
-127.0.0.1_29002 -> 09:09:28.723399 raft.go:210: Estado actual 1 1 true 1
-127.0.0.1_29002 -> 09:09:28.726225 raft.go:301: Operación solicitada
-127.0.0.1_29002 -> 09:09:28.726271 raft.go:303: Operación sometida
-127.0.0.1_29002 -> 09:09:28.878066 raft.go:301: Operación solicitada
-127.0.0.1_29002 -> 09:09:28.878108 raft.go:303: Operación sometida
-127.0.0.1_29002 -> 09:09:29.031133 raft.go:301: Operación solicitada
-127.0.0.1_29002 -> 09:09:29.031175 raft.go:303: Operación sometida
-127.0.0.1_29002 -> 09:09:29.099439 raft.go:571: Append enviado
-127.0.0.1_29002 -> 09:09:29.099464 raft.go:576: Append correcto
-127.0.0.1_29002 -> 09:09:29.099682 raft.go:571: Append enviado
-127.0.0.1_29002 -> 09:09:29.099800 raft.go:576: Append correcto
+127.0.0.1_29002 -> 14:06:46.650597 raft.go:157: logger initialized
+127.0.0.1_29002 -> 14:06:46.650734 raft.go:452: Now i am a follower
+127.0.0.1_29002 -> 14:06:49.014524 raft.go:332: RPC PedirVoto called from other replica
+127.0.0.1_29002 -> 14:06:49.099811 raft.go:210: Estado actual 1 0 false -1
+127.0.0.1_29002 -> 14:06:49.707186 raft.go:373: RPC AppendEntries called from other replica
+127.0.0.1_29002 -> 14:06:49.707223 raft.go:390: {AAAAAAAAAAA aa a}
+127.0.0.1_29002 -> 14:06:49.707236 raft.go:390: {AAAAAAAAAAA aa a}
+127.0.0.1_29002 -> 14:06:49.707246 raft.go:390: {AAAAAAAAAAA aa a}
+127.0.0.1_29002 -> 14:06:49.707257 raft.go:395: AAAAAAAAAAAAAA SALEEEE 
+127.0.0.1_29002 -> 14:06:50.054039 raft.go:614: LOGS:
+127.0.0.1_29002 -> 14:06:50.054059 raft.go:616: AAAAAAAAAAA
+127.0.0.1_29002 -> 14:06:50.054067 raft.go:616: AAAAAAAAAAA
+127.0.0.1_29002 -> 14:06:50.054073 raft.go:616: AAAAAAAAAAA
+127.0.0.1_29002 -> 14:06:50.054078 raft.go:609: Log enviados AAAAAAAAAAA
+127.0.0.1_29002 -> 14:06:50.054271 raft.go:614: LOGS:
+127.0.0.1_29002 -> 14:06:50.054285 raft.go:616: AAAAAAAAAAA
+127.0.0.1_29002 -> 14:06:50.054290 raft.go:616: AAAAAAAAAAA
+127.0.0.1_29002 -> 14:06:50.054294 raft.go:616: AAAAAAAAAAA
+127.0.0.1_29002 -> 14:06:50.054297 raft.go:609: Log enviados AAAAAAAAAAA
+127.0.0.1_29002 -> 14:06:50.054499 raft.go:614: LOGS:
+127.0.0.1_29002 -> 14:06:50.054515 raft.go:616: AAAAAAAAAAA
+127.0.0.1_29002 -> 14:06:50.054521 raft.go:616: AAAAAAAAAAA
+127.0.0.1_29002 -> 14:06:50.054528 raft.go:616: AAAAAAAAAAA
+127.0.0.1_29002 -> 14:06:50.054534 raft.go:609: Log enviados AAAAAAAAAAA

@@ -1,6 +1,24 @@
-127.0.0.1_29003 -> 09:09:26.787730 raft.go:157: logger initialized
-127.0.0.1_29003 -> 09:09:26.788001 raft.go:450: Now i am a follower
-127.0.0.1_29003 -> 09:09:28.195169 raft.go:332: RPC PedirVoto called from other replica
-127.0.0.1_29003 -> 09:09:28.648678 raft.go:373: RPC AppendEntries called from other replica
-127.0.0.1_29003 -> 09:09:28.724822 raft.go:210: Estado actual 2 0 false 1
-127.0.0.1_29003 -> 09:09:29.098949 raft.go:373: RPC AppendEntries called from other replica
+127.0.0.1_29003 -> 14:06:46.672758 raft.go:157: logger initialized
+127.0.0.1_29003 -> 14:06:46.672980 raft.go:452: Now i am a follower
+127.0.0.1_29003 -> 14:06:49.014229 raft.go:332: RPC PedirVoto called from other replica
+127.0.0.1_29003 -> 14:06:49.100123 raft.go:210: Estado actual 2 0 false -1
+127.0.0.1_29003 -> 14:06:49.707279 raft.go:373: RPC AppendEntries called from other replica
+127.0.0.1_29003 -> 14:06:49.707305 raft.go:390: {AAAAAAAAAAA aa a}
+127.0.0.1_29003 -> 14:06:49.707312 raft.go:390: {AAAAAAAAAAA aa a}
+127.0.0.1_29003 -> 14:06:49.707319 raft.go:390: {AAAAAAAAAAA aa a}
+127.0.0.1_29003 -> 14:06:49.707324 raft.go:395: AAAAAAAAAAAAAA SALEEEE 
+127.0.0.1_29003 -> 14:06:50.054799 raft.go:614: LOGS:
+127.0.0.1_29003 -> 14:06:50.054816 raft.go:616: AAAAAAAAAAA
+127.0.0.1_29003 -> 14:06:50.054822 raft.go:616: AAAAAAAAAAA
+127.0.0.1_29003 -> 14:06:50.054828 raft.go:616: AAAAAAAAAAA
+127.0.0.1_29003 -> 14:06:50.054834 raft.go:609: Log enviados AAAAAAAAAAA
+127.0.0.1_29003 -> 14:06:50.055063 raft.go:614: LOGS:
+127.0.0.1_29003 -> 14:06:50.055072 raft.go:616: AAAAAAAAAAA
+127.0.0.1_29003 -> 14:06:50.055078 raft.go:616: AAAAAAAAAAA
+127.0.0.1_29003 -> 14:06:50.055084 raft.go:616: AAAAAAAAAAA
+127.0.0.1_29003 -> 14:06:50.055089 raft.go:609: Log enviados AAAAAAAAAAA
+127.0.0.1_29003 -> 14:06:50.055295 raft.go:614: LOGS:
+127.0.0.1_29003 -> 14:06:50.055306 raft.go:616: AAAAAAAAAAA
+127.0.0.1_29003 -> 14:06:50.055312 raft.go:616: AAAAAAAAAAA
+127.0.0.1_29003 -> 14:06:50.055318 raft.go:616: AAAAAAAAAAA
+127.0.0.1_29003 -> 14:06:50.055323 raft.go:609: Log enviados AAAAAAAAAAA

@@ -165,7 +165,7 @@ func NuevoNodo(nodos []rpctimeout.HostPort, yo int,
 
 	nr.CurrentState.CurrentTerm = 0
 	nr.CurrentState.VotedFor = -1
-	nr.CurrentState.Logs = make([]Log,100)
+	nr.CurrentState.Logs = make([]Log,0)
 	
 	nr.CurrentState.CommitIndex = 0
 	nr.CurrentState.LastApplied = 0
@@ -298,7 +298,7 @@ type ResultadoRemoto struct {
 
 func (nr *NodoRaft) SometerOperacionRaft(operacion TipoOperacion,
 												reply *ResultadoRemoto) error {
-	nr.Logger.Println("Operación solicitada")
+	nr.Logger.Println("Operación solicitada: " + operacion.Operacion)
 	reply.IndiceRegistro,reply.Mandato, reply.EsLider,reply.IdLider,reply.ValorADevolver = nr.someterOperacion(operacion)
 	nr.Logger.Println("Operación sometida")
 	return nil
@@ -375,7 +375,7 @@ func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 
 	if(args.Term < nr.CurrentState.CurrentTerm) {
 		results.Sucess = false
-	} else if(nr.CurrentState.Logs[args.PrevLogIndex].Term != args.PrevLogTerm) {//log donesnt contait an entry
+	} else if(len(nr.CurrentState.Logs) != 0 && nr.CurrentState.Logs[args.PrevLogIndex].Term != args.PrevLogTerm) {//log donesnt contait an entry
 		results.Sucess = false
 	} else {
 		//Procesar logs y tal
@@ -387,10 +387,12 @@ func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 
 		for i := 0; i < len(args.Entries);i++ {
 			nr.CurrentState.Logs = append(nr.CurrentState.Logs,args.Entries[i])
+			nr.Logger.Println(args.Entries[i].Operacion)
 		}
 		results.Sucess = true
 		nr.StillAlive <- true
 	}
+	nr.Logger.Println("AAAAAAAAAAAAAA SALEEEE ")
 	return nil
 }
 
@@ -560,10 +562,12 @@ func (nr *NodoRaft) lanzarLatidos() {
 				nr.CurrentState.CommitIndex,
 			}
 			if(nr.CurrentState.NextIndex[i] <= len(nr.CurrentState.Logs)) {
-				args.Entries = nr.CurrentState.Logs[nr.CurrentState.MatchIndex[i]:nr.CurrentState.NextIndex[i]]
+				nr.Logger.Println("ENTRAAAAAA")
+				args.Entries = nr.CurrentState.Logs[nr.CurrentState.MatchIndex[i]:len(nr.CurrentState.Logs)]
 				args.PrevLogIndex = nr.CurrentState.MatchIndex[i]
 			}
 			go func(i int, args ArgAppendEntries, reply Results) {
+				nr.Logger.Println(len(args.Entries))
 				if(nr.enviarAppendEntries(i,&args,&reply)) {
 					if(len(args.Entries) == 0) {
 						nr.Logger.Println("Latido enviado")
@@ -571,13 +575,17 @@ func (nr *NodoRaft) lanzarLatidos() {
 						nr.Logger.Println("Append enviado")
 						
 						if(reply.Sucess) {
-							nr.CurrentState.MatchIndex[i] = nr.CurrentState.NextIndex[i]
-							nr.CurrentState.NextIndex[i] += len(args.Entries)
+							nr.CurrentState.MatchIndex[i] += len(args.Entries)
+							nr.CurrentState.NextIndex[i] += len(args.Entries) 
 							nr.Logger.Println("Append correcto")
 						}
 				}
 				} else {
-					nr.Logger.Println("RPC fallido")
+					if(len(args.Entries) == 0) {
+						nr.Logger.Println("Latido fallido")
+					} else {
+						nr.Logger.Println("RPC fallido")
+					}
 				}
 			} (i,args,reply)
 		}
@@ -593,3 +601,23 @@ func (nr *NodoRaft) lanzarLatidos() {
 	// 	nr.Logger.Printf("Comprometido hasta log %d\n",nr.CurrentState.CommitIndex)
 	// }
 }
+
+func (nr *NodoRaft) ObtenerRegistro(args int,
+	reply *string) error {
+		nr.printLogs()
+	*reply = nr.CurrentState.Logs[args].Operacion.Operacion
+	nr.Logger.Println("Log enviados " + nr.CurrentState.Logs[args].Operacion.Operacion)
+return nil
+}
+
+func (nr *NodoRaft) printLogs() {
+	nr.Logger.Println("LOGS:")
+	for i:= 0; i < len(nr.CurrentState.Logs); i++ {
+		nr.Logger.Println(nr.CurrentState.Logs[i].Operacion.Operacion)
+	}
+}
+
+// func (nr *NodoRaft) ObtenerEstadoNodo(args Vacio, reply *EstadoRemoto) error {
+// 	reply.IdNodo,reply.Mandato,reply.EsLider,reply.IdLider = nr.obtenerEstado()
+// 	return nil
+// }

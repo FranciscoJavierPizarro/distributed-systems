@@ -67,17 +67,17 @@ func TestPrimerasPruebas(t *testing.T) { // (m *testing.M) {
 
 	// Run test sequence
 
-	// Test1 : No debería haber ningun primario, si SV no ha recibido aún latidos
-	t.Run("T1:soloArranqueYparada",
-		func(t *testing.T) { cfg.soloArranqueYparadaTest1(t) })
+	// // Test1 : No debería haber ningun primario, si SV no ha recibido aún latidos
+	// t.Run("T1:soloArranqueYparada",
+	// 	func(t *testing.T) { cfg.soloArranqueYparadaTest1(t) })
 
-	// Test2 : No debería haber ningun primario, si SV no ha recibido aún latidos
-	t.Run("T2:ElegirPrimerLider",
-		func(t *testing.T) { cfg.elegirPrimerLiderTest2(t) })
+	// // Test2 : No debería haber ningun primario, si SV no ha recibido aún latidos
+	// t.Run("T2:ElegirPrimerLider",
+	// 	func(t *testing.T) { cfg.elegirPrimerLiderTest2(t) })
 
-	// Test3: tenemos el primer primario correcto
-	t.Run("T3:FalloAnteriorElegirNuevoLider",
-		func(t *testing.T) { cfg.falloAnteriorElegirNuevoLiderTest3(t) })
+	// // Test3: tenemos el primer primario correcto
+	// t.Run("T3:FalloAnteriorElegirNuevoLider",
+	// 	func(t *testing.T) { cfg.falloAnteriorElegirNuevoLiderTest3(t) })
 
 	// Test4: Tres operaciones comprometidas en configuración estable
 	t.Run("T4:tresOperacionesComprometidasEstable",
@@ -247,6 +247,22 @@ func (cfg *configDespliegue) tresOperacionesComprometidasEstable(t *testing.T) {
 		cfg.someterOperacion(idLider)
 		fmt.Println("Operación sometida")
 	}
+	time.Sleep(500 * time.Millisecond)
+	fmt.Println("Recuperando logs")
+	logs := [][]string{}
+	for i:= 0 ; i <3 ; i++ {
+		logs = append(logs,nil)
+		logs[i] = cfg.obtenerRegistro(i)
+		fmt.Println("Logs obtenidos")
+		fmt.Println(logs[i][0])
+	}
+
+	// for i := 0; i < len(logs[0]); i++ {
+	// 	if(logs[0][i] != logs[1][i] || logs[0][i] != logs[2][i]) {
+	// 		panic("logs distintos")
+	// 	}
+	// 	fmt.Println(logs[0][i] + " " + logs[1][i] + " " + logs[2][i] + " ")
+	// }
 	// Parar réplicas almacenamiento en remoto
 	cfg.stopDistributedProcesses()  //parametros
 
@@ -414,14 +430,27 @@ func (cfg *configDespliegue) quitarLider() {
 
 func (cfg *configDespliegue) someterOperacion(
 	indiceNodo int) {
-var operacion raft.TipoOperacion = raft.TipoOperacion{"aaa","aa","a"}
-var reply raft.ResultadoRemoto
-err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.SometerOperacionRaft",
-operacion, &reply, 10 * time.Millisecond)
-check.CheckError(err, "Error en llamada RPC SometerOperacion")
-if(reply.ValorADevolver != "aaa") {
-	panic("no esperado valor de op")
+	operacion := raft.TipoOperacion{"aaa","aa","a"}
+	operacion.Operacion = "AAAAAAAAAAA"
+	var reply raft.ResultadoRemoto
+	err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.SometerOperacionRaft",
+	operacion, &reply, 10 * time.Millisecond)
+	check.CheckError(err, "Error en llamada RPC SometerOperacion")
+	if(reply.ValorADevolver != "AAAAAAAAAAA") {
+		panic("no esperado valor de op")
+	}
+	time.Sleep(150 * time.Millisecond)
+	return
 }
-time.Sleep(150 * time.Millisecond)
-return
+
+func (cfg *configDespliegue) obtenerRegistro(indiceNodo int) ([]string){
+	results := []string{}
+	var reply string
+	for i:=0; i< 3; i++ {
+		err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.ObtenerRegistro",
+		i, &reply, 10 * time.Millisecond)
+		check.CheckError(err, "Error en llamada RPC obtener registro")
+		results = append(results,reply)
+	}
+	return results
 }
