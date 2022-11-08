@@ -215,10 +215,6 @@ func (cfg *configDespliegue) falloAnteriorElegirNuevoLiderTest3(t *testing.T) {
 	fmt.Printf("Lider inicial\n")
 	cfg.pruebaUnLider(3)
 
-
-	// Desconectar lider
-	// ???
-
 	cfg.quitarLider()
 
 	fmt.Printf("Comprobar nuevo lider\n")
@@ -233,9 +229,28 @@ func (cfg *configDespliegue) falloAnteriorElegirNuevoLiderTest3(t *testing.T) {
 
 // 3 operaciones comprometidas con situacion estable y sin fallos - 3 NODOS RAFT
 func (cfg *configDespliegue) tresOperacionesComprometidasEstable(t *testing.T) {
-	t.Skip("SKIPPED tresOperacionesComprometidasEstable")
+//	t.Skip("SKIPPED tresOperacionesComprometidasEstable")
 
 	// A completar ???
+
+	fmt.Println(t.Name(), ".....................")
+
+	cfg.startDistributedProcesses()
+
+	fmt.Printf("Tres operaciones comprometidas establesl\n")
+	time.Sleep(300 * time.Millisecond)
+	cfg.pruebaUnLider(3)
+
+	_, _, _, idLider := cfg.obtenerEstadoRemoto(0)
+	fmt.Printf("Lider:%d\n",idLider)
+	for i:= 0 ; i <3 ; i++ {
+		cfg.someterOperacion(idLider)
+		fmt.Println("Operación sometida")
+	}
+	// Parar réplicas almacenamiento en remoto
+	cfg.stopDistributedProcesses()  //parametros
+
+	fmt.Println(".............", t.Name(), "Superado")
 }
 
 // Se consigue acuerdo a pesar de desconexiones de seguidor -- 3 NODOS RAFT
@@ -279,7 +294,7 @@ func(cfg *configDespliegue) SometerConcurrentementeOperaciones(t *testing.T) {
 	// un bucle para estabilizar la ejecucion
 
 	// Obtener un lider y, a continuación someter una operacion
-
+	
 
 	// Someter 5  operaciones concurrentes
 
@@ -395,4 +410,18 @@ func (cfg *configDespliegue) quitarLider() {
 	raft.Vacio{}, &reply, 10 * time.Millisecond)
 	check.CheckError(err, "Error en llamada RPC Para nodo")
 
+}
+
+func (cfg *configDespliegue) someterOperacion(
+	indiceNodo int) {
+var operacion raft.TipoOperacion = raft.TipoOperacion{"aaa","aa","a"}
+var reply raft.ResultadoRemoto
+err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.SometerOperacionRaft",
+operacion, &reply, 10 * time.Millisecond)
+check.CheckError(err, "Error en llamada RPC SometerOperacion")
+if(reply.ValorADevolver != "aaa") {
+	panic("no esperado valor de op")
+}
+time.Sleep(150 * time.Millisecond)
+return
 }

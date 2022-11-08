@@ -171,8 +171,13 @@ func NuevoNodo(nodos []rpctimeout.HostPort, yo int,
 	nr.CurrentState.LastApplied = 0
 
 	nr.CurrentState.NextIndex = make([]int,len(nr.Nodos))
+	for i := 0; i < len(nr.Nodos); i++ {
+		nr.CurrentState.NextIndex[i] = 1
+	}
 	nr.CurrentState.MatchIndex = make([]int,len(nr.Nodos))
-
+	for i := 0; i < len(nr.Nodos); i++ {
+		nr.CurrentState.MatchIndex[i] = 0
+	}
 	nr.CurrentState.Rol = "Seguidor"
 	
 	go nr.run(canalAplicarOperacion)
@@ -227,19 +232,20 @@ func (nr *NodoRaft) obtenerEstado() (int, int, bool, int) {
 // Cuarto valor es el lider, es el indice del líder si no es él
 func (nr *NodoRaft) someterOperacion(operacion TipoOperacion) (int, int,
 															bool, int, string) {
-	indice := -1
-	mandato := -1
+	indice := len(nr.CurrentState.Logs)+1
+	mandato := nr.CurrentState.CurrentTerm
 	EsLider := nr.IdLider == nr.Yo
 	idLider := nr.IdLider
-	valorADevolver := ""
+	valorADevolver := operacion.Operacion
 	
 
 	// Vuestro codigo aqui
 
 	if(EsLider) {
-		//nr.Logs[len(nr.Logs)] = Log{nr.CurrentState.CurrentTerm, operacion}
+		nr.CurrentState.Logs = append(nr.CurrentState.Logs,Log{nr.CurrentState.CurrentTerm, operacion})
 		//DEVOLVER EL VALOR?
-	}
+		// time.Sleep(500 * time.Millisecond)
+		}
 
 
 	
@@ -292,8 +298,9 @@ type ResultadoRemoto struct {
 
 func (nr *NodoRaft) SometerOperacionRaft(operacion TipoOperacion,
 												reply *ResultadoRemoto) error {
-	reply.IndiceRegistro,reply.Mandato, reply.EsLider,
-			reply.IdLider,reply.ValorADevolver = nr.someterOperacion(operacion)
+	nr.Logger.Println("Operación solicitada")
+	reply.IndiceRegistro,reply.Mandato, reply.EsLider,reply.IdLider,reply.ValorADevolver = nr.someterOperacion(operacion)
+	nr.Logger.Println("Operación sometida")
 	return nil
 }
 
@@ -359,7 +366,13 @@ type Results struct {
 func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 													  results *Results) error {
 	// Completar....
-	nr.Logger.Println("RPC AppendEntries called from other replica")
+	if(len(args.Entries) == 0) {
+		nr.Logger.Println("HeartPulse recivied")
+	} else {
+
+		nr.Logger.Println("RPC AppendEntries called from other replica")
+	}
+
 	if(args.Term < nr.CurrentState.CurrentTerm) {
 		results.Sucess = false
 	} else if(nr.CurrentState.Logs[args.PrevLogIndex].Term != args.PrevLogTerm) {//log donesnt contait an entry
@@ -371,6 +384,11 @@ func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 		}
 		nr.IdLider = args.LeaderId
 		nr.CurrentState.VotedFor = -1
+
+		for i := 0; i < len(args.Entries);i++ {
+			nr.CurrentState.Logs = append(nr.CurrentState.Logs,args.Entries[i])
+		}
+		results.Sucess = true
 		nr.StillAlive <- true
 	}
 	return nil
@@ -449,7 +467,7 @@ func (nr *NodoRaft) runSeguidor() {
 
 func (nr *NodoRaft) runCandidato() {
 	nr.Logger.Println("Now i am a candidate")
-	nr.CurrentState.CurrentTerm += 1
+	nr.CurrentState.CurrentTerm++
 	ticker := time.NewTicker(time.Second * electionTime)
 	nr.CurrentState.VotedFor = nr.Yo
 	for nr.getState() == "Candidato" {
@@ -475,6 +493,8 @@ func (nr *NodoRaft) runCandidato() {
 				//Reiniciar elección
 				ticker.Reset(time.Second * electionTime)
 				notTimeout = false
+				nr.CurrentState.CurrentTerm++
+
 			}
 		}
 	}
@@ -527,25 +547,49 @@ func (nr *NodoRaft) lanzarPeticionesVotos() {
 }
 
 func (nr *NodoRaft) lanzarLatidos() {
-	args := ArgAppendEntries{
-		nr.CurrentState.CurrentTerm,
-		nr.Yo,
-		0,
-		0,
-		nil,
-		nr.CurrentState.CommitIndex,
-	}
+
 	var reply Results
 	for i := 0; i < len(nr.Nodos) ; i++ {
 		if(i != nr.Yo) {
+			args := ArgAppendEntries{
+				nr.CurrentState.CurrentTerm,
+				nr.Yo,
+				0,
+				0,
+				make([]Log,0),
+				nr.CurrentState.CommitIndex,
+			}
+			if(nr.CurrentState.NextIndex[i] <= len(nr.CurrentState.Logs)) {
+				args.Entries = nr.CurrentState.Logs[nr.CurrentState.MatchIndex[i]:nr.CurrentState.NextIndex[i]]
+				args.PrevLogIndex = nr.CurrentState.MatchIndex[i]
+			}
 			go func(i int, args ArgAppendEntries, reply Results) {
 				if(nr.enviarAppendEntries(i,&args,&reply)) {
-					nr.Logger.Println("Latido enviado")
-					
+					if(len(args.Entries) == 0) {
+						nr.Logger.Println("Latido enviado")
+					} else {
+						nr.Logger.Println("Append enviado")
+						
+						if(reply.Sucess) {
+							nr.CurrentState.MatchIndex[i] = nr.CurrentState.NextIndex[i]
+							nr.CurrentState.NextIndex[i] += len(args.Entries)
+							nr.Logger.Println("Append correcto")
+						}
+				}
 				} else {
-					nr.Logger.Println("Latido fallido")
+					nr.Logger.Println("RPC fallido")
 				}
 			} (i,args,reply)
 		}
 	}
+	contador := 0
+	for i:= 0; i < len(nr.Nodos) ; i++  {
+		if(i != nr.Yo && nr.CurrentState.MatchIndex[i] == len(nr.CurrentState.Logs)) {
+			contador += 1
+		}
+	}
+	// if contador >= ((len(nr.Nodos) / 2) + 1) {
+	// 	nr.CurrentState.CommitIndex = len(nr.CurrentState.Logs)
+	// 	nr.Logger.Printf("Comprometido hasta log %d\n",nr.CurrentState.CommitIndex)
+	// }
 }

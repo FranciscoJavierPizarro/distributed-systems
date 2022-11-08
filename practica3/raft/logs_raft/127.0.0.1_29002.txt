@@ -1,29 +1,25 @@
-127.0.0.1_29002 -> 19:02:34.849680 raft.go:157: logger initialized
-127.0.0.1_29002 -> 19:02:34.849926 raft.go:432: Now i am a follower
-127.0.0.1_29002 -> 19:02:36.336344 raft.go:205: Estado actual 1 0 false -1
-127.0.0.1_29002 -> 19:02:36.462174 raft.go:451: Now i am a candidate
-127.0.0.1_29002 -> 19:02:36.463905 raft.go:516: Voto solicitado
-127.0.0.1_29002 -> 19:02:36.463932 raft.go:518: Voto recibido
-127.0.0.1_29002 -> 19:02:36.463944 raft.go:464: Voto procesado
-127.0.0.1_29002 -> 19:02:36.463953 raft.go:468: Voy a ser lider
-127.0.0.1_29002 -> 19:02:36.463962 raft.go:484: Now i am a leader
-127.0.0.1_29002 -> 19:02:36.464079 raft.go:516: Voto solicitado
-127.0.0.1_29002 -> 19:02:36.464095 raft.go:518: Voto recibido
-127.0.0.1_29002 -> 19:02:36.839143 raft.go:205: Estado actual 1 1 true 1
-127.0.0.1_29002 -> 19:02:37.055994 raft.go:543: Latido enviado
-127.0.0.1_29002 -> 19:02:37.056111 raft.go:543: Latido enviado
-127.0.0.1_29002 -> 19:02:37.644459 raft.go:432: Now i am a follower
-127.0.0.1_29002 -> 19:02:37.645848 raft.go:543: Latido enviado
-127.0.0.1_29002 -> 19:02:37.645972 raft.go:543: Latido enviado
-127.0.0.1_29002 -> 19:02:37.845839 raft.go:205: Estado actual 1 1 false -1
-127.0.0.1_29002 -> 19:02:38.347901 raft.go:205: Estado actual 1 1 false -1
-127.0.0.1_29002 -> 19:02:38.851654 raft.go:205: Estado actual 1 1 false -1
-127.0.0.1_29002 -> 19:02:38.987022 raft.go:451: Now i am a candidate
-127.0.0.1_29002 -> 19:02:38.987081 raft.go:464: Voto procesado
-127.0.0.1_29002 -> 19:02:38.987098 raft.go:468: Voy a ser lider
-127.0.0.1_29002 -> 19:02:38.987109 raft.go:484: Now i am a leader
-127.0.0.1_29002 -> 19:02:38.988386 raft.go:516: Voto solicitado
-127.0.0.1_29002 -> 19:02:38.988424 raft.go:518: Voto recibido
-127.0.0.1_29002 -> 19:02:38.988444 raft.go:516: Voto solicitado
-127.0.0.1_29002 -> 19:02:38.988464 raft.go:518: Voto recibido
-127.0.0.1_29002 -> 19:02:39.355131 raft.go:205: Estado actual 1 2 true 1
+127.0.0.1_29002 -> 09:09:26.753606 raft.go:157: logger initialized
+127.0.0.1_29002 -> 09:09:26.753855 raft.go:450: Now i am a follower
+127.0.0.1_29002 -> 09:09:28.194250 raft.go:469: Now i am a candidate
+127.0.0.1_29002 -> 09:09:28.195619 raft.go:536: Voto solicitado
+127.0.0.1_29002 -> 09:09:28.195643 raft.go:538: Voto recibido
+127.0.0.1_29002 -> 09:09:28.195654 raft.go:482: Voto procesado
+127.0.0.1_29002 -> 09:09:28.195664 raft.go:486: Voy a ser lider
+127.0.0.1_29002 -> 09:09:28.195672 raft.go:504: Now i am a leader
+127.0.0.1_29002 -> 09:09:28.195804 raft.go:536: Voto solicitado
+127.0.0.1_29002 -> 09:09:28.195817 raft.go:538: Voto recibido
+127.0.0.1_29002 -> 09:09:28.648975 raft.go:571: Append enviado
+127.0.0.1_29002 -> 09:09:28.648998 raft.go:576: Append correcto
+127.0.0.1_29002 -> 09:09:28.649008 raft.go:571: Append enviado
+127.0.0.1_29002 -> 09:09:28.649049 raft.go:576: Append correcto
+127.0.0.1_29002 -> 09:09:28.723399 raft.go:210: Estado actual 1 1 true 1
+127.0.0.1_29002 -> 09:09:28.726225 raft.go:301: Operación solicitada
+127.0.0.1_29002 -> 09:09:28.726271 raft.go:303: Operación sometida
+127.0.0.1_29002 -> 09:09:28.878066 raft.go:301: Operación solicitada
+127.0.0.1_29002 -> 09:09:28.878108 raft.go:303: Operación sometida
+127.0.0.1_29002 -> 09:09:29.031133 raft.go:301: Operación solicitada
+127.0.0.1_29002 -> 09:09:29.031175 raft.go:303: Operación sometida
+127.0.0.1_29002 -> 09:09:29.099439 raft.go:571: Append enviado
+127.0.0.1_29002 -> 09:09:29.099464 raft.go:576: Append correcto
+127.0.0.1_29002 -> 09:09:29.099682 raft.go:571: Append enviado
+127.0.0.1_29002 -> 09:09:29.099800 raft.go:576: Append correcto

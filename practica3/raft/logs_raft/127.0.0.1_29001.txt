@@ -1,13 +1,7 @@
-127.0.0.1_29001 -> 19:02:34.833964 raft.go:157: logger initialized
-127.0.0.1_29001 -> 19:02:34.834206 raft.go:432: Now i am a follower
-127.0.0.1_29001 -> 19:02:36.335576 raft.go:205: Estado actual 0 0 false -1
-127.0.0.1_29001 -> 19:02:36.462999 raft.go:325: RPC PedirVoto called from other replica
-127.0.0.1_29001 -> 19:02:36.838573 raft.go:205: Estado actual 0 0 false -1
-127.0.0.1_29001 -> 19:02:37.055394 raft.go:362: RPC AppendEntries called from other replica
-127.0.0.1_29001 -> 19:02:37.342465 raft.go:205: Estado actual 0 0 false 1
-127.0.0.1_29001 -> 19:02:37.645249 raft.go:362: RPC AppendEntries called from other replica
-127.0.0.1_29001 -> 19:02:37.845228 raft.go:205: Estado actual 0 0 false 1
-127.0.0.1_29001 -> 19:02:38.347321 raft.go:205: Estado actual 0 0 false 1
-127.0.0.1_29001 -> 19:02:38.851000 raft.go:205: Estado actual 0 0 false 1
-127.0.0.1_29001 -> 19:02:38.987941 raft.go:325: RPC PedirVoto called from other replica
-127.0.0.1_29001 -> 19:02:39.354501 raft.go:205: Estado actual 0 0 false 1
+127.0.0.1_29001 -> 09:09:26.760365 raft.go:157: logger initialized
+127.0.0.1_29001 -> 09:09:26.760617 raft.go:450: Now i am a follower
+127.0.0.1_29001 -> 09:09:28.195185 raft.go:332: RPC PedirVoto called from other replica
+127.0.0.1_29001 -> 09:09:28.648802 raft.go:373: RPC AppendEntries called from other replica
+127.0.0.1_29001 -> 09:09:28.721338 raft.go:210: Estado actual 0 0 false 1
+127.0.0.1_29001 -> 09:09:28.725489 raft.go:210: Estado actual 0 0 false 1
+127.0.0.1_29001 -> 09:09:29.099414 raft.go:373: RPC AppendEntries called from other replica
