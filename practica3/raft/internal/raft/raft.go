@@ -33,6 +33,7 @@ import (
 	"time"
 	//"net/rpc"
 	"math/rand"
+	"math"
 	"raft/internal/comun/rpctimeout"
 )
 const errorTime = 100
@@ -398,16 +399,22 @@ func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 		results.Sucess = false
 		return nil
 	} 
-	//Procesar logs y tal
+
 	if(nr.CurrentState.Rol == "Candidato") {
 		nr.CurrentState.Rol = "Seguidor"
 	}
 	nr.IdLider = args.LeaderId
 	nr.CurrentState.VotedFor = -1
-
+	
 	for i := 0; i < len(args.Entries);i++ {
 		nr.CurrentState.Logs = append(nr.CurrentState.Logs,args.Entries[i])
 		//nr.Logger.Println(args.Entries[i].Operacion)
+	}
+	if(len(args.Entries) > 0) {
+		nr.CurrentState.CurrentTerm = args.Entries[len(args.Entries) - 1].Term
+	}
+	if(args.LeaderCommit > nr.CurrentState.CommitIndex) {
+		nr.CurrentState.CommitIndex = int(math.Min(float64(args.LeaderCommit), float64((len(nr.CurrentState.Logs) - 1))))
 	}
 	results.Sucess = true
 	nr.StillAlive <- true
@@ -463,11 +470,6 @@ func (nr *NodoRaft) runCommonTasks(canalAplicarOperacion chan AplicaOperacion) {
 			canalAplicarOperacion <- AplicaOperacion{}
 		}
 	}
-	//TODO
-	//TODO
-	//TODO
-
-	//añadir 2º regla general servidor que actualiza term y pasa a modo follower
 }
 
 func (nr *NodoRaft) runSeguidor() {
@@ -517,7 +519,7 @@ func (nr *NodoRaft) runCandidato() {
 				}
 			case <- ticker.C:
 				//Reiniciar elección
-				ticker.Reset(time.Second * electionTime)
+				// ticker.Reset(time.Second * electionTime)
 				notTimeout = false
 				nr.CurrentState.CurrentTerm++
 

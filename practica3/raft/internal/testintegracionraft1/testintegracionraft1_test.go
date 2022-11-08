@@ -106,8 +106,8 @@ func TestAcuerdosConFallos(t *testing.T) { // (m *testing.M) {
 	t.Run("T5:SinAcuerdoPorFallos ",
 		func(t *testing.T) { cfg.SinAcuerdoPorFallos(t) })
 
-	// t.Run("T5:SometerConcurrentementeOperaciones ",
-	// 	func(t *testing.T) { cfg.SometerConcurrentementeOperaciones(t) })
+	t.Run("T5:SometerConcurrentementeOperaciones ",
+		func(t *testing.T) { cfg.SometerConcurrentementeOperaciones(t) })
 
 }
 
@@ -414,20 +414,87 @@ func(cfg *configDespliegue) SinAcuerdoPorFallos(t *testing.T) {
 
 // Se somete 5 operaciones de forma concurrente -- 3 NODOS RAFT
 func(cfg *configDespliegue) SometerConcurrentementeOperaciones(t *testing.T) {
-	t.Skip("SKIPPED SometerConcurrentementeOperaciones")
-
-	// A completar ???
-
-	// un bucle para estabilizar la ejecucion
+	// t.Skip("SKIPPED SometerConcurrentementeOperaciones")
 
 	// Obtener un lider y, a continuación someter una operacion
-	
+	fmt.Println(t.Name(), ".....................")
+
+	cfg.startDistributedProcesses()
+
+	cfg.pruebaUnLider(3)
+	_, _, _, idLider := cfg.obtenerEstadoRemoto(0)
+	fmt.Printf("Lider:%d\n",idLider)
+
+	// Comprometer una entrada
+	cfg.someterOperacion(idLider,0)
+	fmt.Println("Operación sometida")
+
+	logs := [][]string{}
+	for i:= 0 ; i <3 ; i++ {
+		logs = append(logs,nil)
+		logs[i] = cfg.obtenerRegistro(i,1)
+		fmt.Printf("Logs obtenidos del nodo %d\n",i)
+	}
+
+	for i := 0; i < len(logs[idLider]); i++ {
+		if(logs[0][i] != logs[1][i] || logs[0][i] != logs[2][i]) {
+			panic("logs distintos")
+		}
+		fmt.Println(logs[0][i] + " " + logs[1][i] + " " + logs[2][i] + " ")
+	}
 
 	// Someter 5  operaciones concurrentes
-
+	done := make(chan bool)
+	for i:= 1; i < 6;i++ {
+		go func (done chan bool, i int) {
+			if(cfg.someterOperacion(idLider,i)) {
+				fmt.Println("Operación sometida")
+			} else {
+				fmt.Println("Operación sometida pero no comprometida")
+			}
+			done <- true
+		} (done,i)
+	}
 	// Comprobar estados de nodos Raft, sobre todo
 	// el avance del mandato en curso e indice de registro de cada uno
 	// que debe ser identico entre ellos
+	notEnd := true
+	contador := 0
+	ticker := time.NewTicker(time.Millisecond * 250)
+	for notEnd {
+		select {
+		case <- done:
+			contador++
+			notEnd = contador == 5
+			ticker.Stop()
+		case <- ticker.C:
+			for i:= 0; i < len(cfg.nodosRaft); i++ {
+				_,mandato,_,_ := cfg.obtenerEstadoRemoto(i)
+				fmt.Printf("Mandato %d para el nodo %d\n", mandato, i)
+				cfg.obtenerCompromiso(i)
+			}
+		}
+	}
+
+
+
+	logs = [][]string{}
+	for i:= 0 ; i <3 ; i++ {
+		logs = append(logs,nil)
+		logs[i] = cfg.obtenerRegistro(i,6)
+		fmt.Printf("Logs obtenidos del nodo %d\n",i)
+	}
+	for i := 0; i < len(logs[idLider]); i++ {
+		if(logs[0][i] != logs[1][i] || logs[0][i] != logs[2][i]) {
+			panic("logs distintos")
+		}
+		fmt.Println(logs[0][i] + " " + logs[1][i] + " " + logs[2][i] + " ")
+	}
+	cfg.obtenerCompromiso(idLider)
+	// Parar réplicas almacenamiento en remoto
+	cfg.stopDistributedProcesses()  //parametros
+
+	fmt.Println(".............", t.Name(), "Superado")
 }
 
 
@@ -554,7 +621,7 @@ func (cfg *configDespliegue) obtenerRegistro(indiceNodo int,n int) ([]string){
 	var reply string
 	for i:=0; i< n; i++ {
 		err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.ObtenerRegistro",
-		i, &reply, 15 * time.Millisecond)
+		i, &reply, 40 * time.Millisecond)
 		check.CheckError(err, "Error en llamada RPC obtener registro")
 		results = append(results,reply)
 	}
@@ -566,7 +633,7 @@ func (cfg *configDespliegue) PonerPausa(
 	vacio:= raft.Vacio{}
 	var reply raft.Vacio
 	err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.PonerPausa",
-	vacio, &reply, 15 * time.Millisecond)
+	vacio, &reply, 40 * time.Millisecond)
 	check.CheckError(err, "Error en llamada RPC PonerPausa")
 	return
 }
@@ -576,7 +643,7 @@ func (cfg *configDespliegue) QuitarPausa(
 	vacio:= raft.Vacio{}
 	var reply raft.Vacio
 	err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.QuitarPausa",
-	vacio, &reply, 15 * time.Millisecond)
+	vacio, &reply, 40 * time.Millisecond)
 	check.CheckError(err, "Error en llamada RPC QuitarPausa")
 	return
 }
