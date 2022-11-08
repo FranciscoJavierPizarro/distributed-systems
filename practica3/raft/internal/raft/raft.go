@@ -35,7 +35,7 @@ import (
 	"math/rand"
 	"raft/internal/comun/rpctimeout"
 )
-const errorTime = 3
+const errorTime = 100
 const electionTime = 3
 
 const (
@@ -107,6 +107,7 @@ type NodoRaft struct {
 
 	StillAlive	chan bool
 	VoteRecivied chan bool
+	Comprommised []chan bool
 }
 
 
@@ -160,13 +161,14 @@ func NuevoNodo(nodos []rpctimeout.HostPort, yo int,
 	}
 	nr.StillAlive = make(chan bool)
 	nr.VoteRecivied = make(chan bool)
+	nr.Comprommised = []chan bool{make(chan bool,)}
+	
 	// Añadir codigo de inicialización
 	nr.CurrentState = State{}
 
 	nr.CurrentState.CurrentTerm = 0
 	nr.CurrentState.VotedFor = -1
 	nr.CurrentState.Logs = make([]Log,0)
-	
 	nr.CurrentState.CommitIndex = 0
 	nr.CurrentState.LastApplied = 0
 
@@ -242,9 +244,11 @@ func (nr *NodoRaft) someterOperacion(operacion TipoOperacion) (int, int,
 	// Vuestro codigo aqui
 
 	if(EsLider) {
+		nr.Comprommised = append(nr.Comprommised,make(chan bool))
 		nr.CurrentState.Logs = append(nr.CurrentState.Logs,Log{nr.CurrentState.CurrentTerm, operacion})
 		//DEVOLVER EL VALOR?
 		// time.Sleep(500 * time.Millisecond)
+		<- nr.Comprommised[indice - 1]
 		}
 
 
@@ -329,6 +333,10 @@ type RespuestaPeticionVoto struct {
 func (nr *NodoRaft) PedirVoto(peticion *ArgsPeticionVoto,
 										reply *RespuestaPeticionVoto) error {
 	// Vuestro codigo aqui
+	if(nr.getState() == "Pausa") {
+		for(nr.getState() == "Pausa") {}
+		return nil
+	}
 	nr.Logger.Println("RPC PedirVoto called from other replica")
 
 	reply.Term = nr.CurrentState.CurrentTerm
@@ -366,6 +374,11 @@ type Results struct {
 func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 													  results *Results) error {
 	// Completar....
+	if(nr.getState() == "Pausa") {
+		for(nr.getState() == "Pausa") {}
+		return nil
+	}
+
 	if(len(args.Entries) == 0) {
 		nr.Logger.Println("HeartPulse recivied")
 	} else {
@@ -374,25 +387,32 @@ func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 	}
 
 	if(args.Term < nr.CurrentState.CurrentTerm) {
+		nr.Logger.Println("RPC error term")
 		results.Sucess = false
-	} else if(len(nr.CurrentState.Logs) != 0 && nr.CurrentState.Logs[args.PrevLogIndex].Term != args.PrevLogTerm) {//log donesnt contait an entry
-		results.Sucess = false
-	} else {
-		//Procesar logs y tal
-		if(nr.CurrentState.Rol == "Candidato") {
-			nr.CurrentState.Rol = "Seguidor"
-		}
-		nr.IdLider = args.LeaderId
-		nr.CurrentState.VotedFor = -1
-
-		for i := 0; i < len(args.Entries);i++ {
-			nr.CurrentState.Logs = append(nr.CurrentState.Logs,args.Entries[i])
-			nr.Logger.Println(args.Entries[i].Operacion)
-		}
-		results.Sucess = true
-		nr.StillAlive <- true
+		return nil
 	}
-	nr.Logger.Println("AAAAAAAAAAAAAA SALEEEE ")
+	
+	if(len(nr.CurrentState.Logs) != 0 && args.PrevLogIndex > 0 && 
+	nr.CurrentState.Logs[args.PrevLogIndex - 1].Term != args.PrevLogTerm) {//log donesnt contait an entry
+		nr.Logger.Println("RPC error prevLog term")
+		results.Sucess = false
+		return nil
+	} 
+	//Procesar logs y tal
+	if(nr.CurrentState.Rol == "Candidato") {
+		nr.CurrentState.Rol = "Seguidor"
+	}
+	nr.IdLider = args.LeaderId
+	nr.CurrentState.VotedFor = -1
+
+	for i := 0; i < len(args.Entries);i++ {
+		nr.CurrentState.Logs = append(nr.CurrentState.Logs,args.Entries[i])
+		//nr.Logger.Println(args.Entries[i].Operacion)
+	}
+	results.Sucess = true
+	nr.StillAlive <- true
+	
+	nr.Logger.Println("RPC done")
 	return nil
 }
 
@@ -402,7 +422,7 @@ func (nr *NodoRaft) enviarPeticionVoto(nodo int, args *ArgsPeticionVoto,
 											reply *RespuestaPeticionVoto) bool {
 	
 
-	err := nr.Nodos[nodo].CallTimeout("NodoRaft.PedirVoto", args, &reply, time.Second * errorTime)
+	err := nr.Nodos[nodo].CallTimeout("NodoRaft.PedirVoto", args, &reply, time.Millisecond * errorTime)
 	return err == nil
 }
 
@@ -411,7 +431,7 @@ func (nr *NodoRaft) enviarAppendEntries(nodo int, args *ArgAppendEntries,
 	reply *Results) bool {
 
 
-err := nr.Nodos[nodo].CallTimeout("NodoRaft.AppendEntries", args, &reply, time.Second * errorTime)
+err := nr.Nodos[nodo].CallTimeout("NodoRaft.AppendEntries", args, &reply, time.Millisecond * errorTime)
 return err == nil
 }
 
@@ -428,6 +448,8 @@ func (nr *NodoRaft) run(canalAplicarOperacion chan AplicaOperacion) {
 			nr.runCandidato()
 		case "Lider":
 			nr.runLider()
+		case "Pausa":
+			nr.runPausa()
 		}
 
 	}
@@ -504,6 +526,7 @@ func (nr *NodoRaft) runCandidato() {
 
 func (nr *NodoRaft) runLider() {
 	nr.Logger.Println("Now i am a leader")
+	nr.lanzarLatidos()
 	s1 := rand.NewSource(time.Now().UnixNano())
     r1 := rand.New(s1)
 	heartPulse := time.Millisecond * time.Duration(300+r1.Intn(500))
@@ -518,6 +541,10 @@ func (nr *NodoRaft) runLider() {
 	ticker.Stop()
 }
 
+func (nr *NodoRaft) runPausa() {
+	nr.Logger.Println("Now i am in pause")
+	for nr.getState() == "Pausa" {}
+}
 
 func (nr *NodoRaft) getState() string {
 	return nr.CurrentState.Rol
@@ -565,9 +592,9 @@ func (nr *NodoRaft) lanzarLatidos() {
 				nr.Logger.Println("ENTRAAAAAA")
 				args.Entries = nr.CurrentState.Logs[nr.CurrentState.MatchIndex[i]:len(nr.CurrentState.Logs)]
 				args.PrevLogIndex = nr.CurrentState.MatchIndex[i]
+				args.PrevLogTerm = nr.CurrentState.Logs[args.PrevLogIndex].Term
 			}
 			go func(i int, args ArgAppendEntries, reply Results) {
-				nr.Logger.Println(len(args.Entries))
 				if(nr.enviarAppendEntries(i,&args,&reply)) {
 					if(len(args.Entries) == 0) {
 						nr.Logger.Println("Latido enviado")
@@ -590,23 +617,31 @@ func (nr *NodoRaft) lanzarLatidos() {
 			} (i,args,reply)
 		}
 	}
-	contador := 0
+	contador := 1
 	for i:= 0; i < len(nr.Nodos) ; i++  {
 		if(i != nr.Yo && nr.CurrentState.MatchIndex[i] == len(nr.CurrentState.Logs)) {
 			contador += 1
 		}
 	}
-	// if contador >= ((len(nr.Nodos) / 2) + 1) {
-	// 	nr.CurrentState.CommitIndex = len(nr.CurrentState.Logs)
-	// 	nr.Logger.Printf("Comprometido hasta log %d\n",nr.CurrentState.CommitIndex)
-	// }
+	if contador >= ((len(nr.Nodos) / 2) + 1) {
+		for i:= nr.CurrentState.CommitIndex; i < len(nr.CurrentState.Logs);i++ {
+			nr.Comprommised[i] <- true
+		}
+
+		nr.CurrentState.CommitIndex = len(nr.CurrentState.Logs)
+		nr.Logger.Printf("Comprometido hasta log %d\n",nr.CurrentState.CommitIndex)
+	}
 }
 
 func (nr *NodoRaft) ObtenerRegistro(args int,
 	reply *string) error {
-		nr.printLogs()
+		//nr.printLogs()
+	if(nr.getState() == "Pausa") {
+		for(nr.getState() == "Pausa") {}
+		return nil
+	}
 	*reply = nr.CurrentState.Logs[args].Operacion.Operacion
-	nr.Logger.Println("Log enviados " + nr.CurrentState.Logs[args].Operacion.Operacion)
+	nr.Logger.Println("Log enviado:" + nr.CurrentState.Logs[args].Operacion.Operacion)
 return nil
 }
 
@@ -617,7 +652,14 @@ func (nr *NodoRaft) printLogs() {
 	}
 }
 
-// func (nr *NodoRaft) ObtenerEstadoNodo(args Vacio, reply *EstadoRemoto) error {
-// 	reply.IdNodo,reply.Mandato,reply.EsLider,reply.IdLider = nr.obtenerEstado()
-// 	return nil
-// }
+func (nr *NodoRaft) PonerPausa(args Vacio, reply *Vacio) error {
+	nr.Logger.Println("PAUSED")
+	nr.CurrentState.Rol = "Pausa"
+	return nil
+}
+
+func (nr *NodoRaft) QuitarPausa(args Vacio, reply *Vacio) error {
+	nr.Logger.Println("CONTINUE")
+	nr.CurrentState.Rol = "Seguidor"
+	return nil
+}

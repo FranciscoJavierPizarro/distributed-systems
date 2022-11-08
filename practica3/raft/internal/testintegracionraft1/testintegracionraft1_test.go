@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"testing"
 	"time"
+	"math/rand"
 
 	"raft/internal/despliegue"
 	"raft/internal/raft"
@@ -67,17 +68,17 @@ func TestPrimerasPruebas(t *testing.T) { // (m *testing.M) {
 
 	// Run test sequence
 
-	// // Test1 : No debería haber ningun primario, si SV no ha recibido aún latidos
-	// t.Run("T1:soloArranqueYparada",
-	// 	func(t *testing.T) { cfg.soloArranqueYparadaTest1(t) })
+	// Test1 : No debería haber ningun primario, si SV no ha recibido aún latidos
+	t.Run("T1:soloArranqueYparada",
+		func(t *testing.T) { cfg.soloArranqueYparadaTest1(t) })
 
-	// // Test2 : No debería haber ningun primario, si SV no ha recibido aún latidos
-	// t.Run("T2:ElegirPrimerLider",
-	// 	func(t *testing.T) { cfg.elegirPrimerLiderTest2(t) })
+	// Test2 : No debería haber ningun primario, si SV no ha recibido aún latidos
+	t.Run("T2:ElegirPrimerLider",
+		func(t *testing.T) { cfg.elegirPrimerLiderTest2(t) })
 
-	// // Test3: tenemos el primer primario correcto
-	// t.Run("T3:FalloAnteriorElegirNuevoLider",
-	// 	func(t *testing.T) { cfg.falloAnteriorElegirNuevoLiderTest3(t) })
+	// Test3: tenemos el primer primario correcto
+	t.Run("T3:FalloAnteriorElegirNuevoLider",
+		func(t *testing.T) { cfg.falloAnteriorElegirNuevoLiderTest3(t) })
 
 	// Test4: Tres operaciones comprometidas en configuración estable
 	t.Run("T4:tresOperacionesComprometidasEstable",
@@ -86,29 +87,29 @@ func TestPrimerasPruebas(t *testing.T) { // (m *testing.M) {
 
 
 // TEST primer rango
-// func TestAcuerdosConFallos(t *testing.T) { // (m *testing.M) {
-// 	// <setup code>
-// 	// Crear canal de resultados de ejecuciones ssh en maquinas remotas
-// 	cfg := makeCfgDespliegue(t,
-// 							3,
-// 							[]string{REPLICA1, REPLICA2, REPLICA3},
-// 							[]bool{true, true, true})
+func TestAcuerdosConFallos(t *testing.T) { // (m *testing.M) {
+	// <setup code>
+	// Crear canal de resultados de ejecuciones ssh en maquinas remotas
+	cfg := makeCfgDespliegue(t,
+							3,
+							[]string{REPLICA1, REPLICA2, REPLICA3},
+							[]bool{true, true, true})
 
-// 	// tear down code
-// 	// eliminar procesos en máquinas remotas
-// 	defer cfg.stop()
+	// tear down code
+	// eliminar procesos en máquinas remotas
+	defer cfg.stop()
 
-// 	// Test5: Se consigue acuerdo a pesar de desconexiones de seguidor
-// 	t.Run("T5:AcuerdoAPesarDeDesconexionesDeSeguidor ",
-// 		func(t *testing.T) { cfg.AcuerdoApesarDeSeguidor(t) })
+	// Test5: Se consigue acuerdo a pesar de desconexiones de seguidor
+	t.Run("T5:AcuerdoAPesarDeDesconexionesDeSeguidor ",
+		func(t *testing.T) { cfg.AcuerdoApesarDeSeguidor(t) })
 
-// 	t.Run("T5:SinAcuerdoPorFallos ",
-// 		func(t *testing.T) { cfg.SinAcuerdoPorFallos(t) })
+	// t.Run("T5:SinAcuerdoPorFallos ",
+	// 	func(t *testing.T) { cfg.SinAcuerdoPorFallos(t) })
 
-// 	t.Run("T5:SometerConcurrentementeOperaciones ",
-// 		func(t *testing.T) { cfg.SometerConcurrentementeOperaciones(t) })
+	// t.Run("T5:SometerConcurrentementeOperaciones ",
+	// 	func(t *testing.T) { cfg.SometerConcurrentementeOperaciones(t) })
 
-// }
+}
 
 
 // ---------------------------------------------------------------------
@@ -244,25 +245,25 @@ func (cfg *configDespliegue) tresOperacionesComprometidasEstable(t *testing.T) {
 	_, _, _, idLider := cfg.obtenerEstadoRemoto(0)
 	fmt.Printf("Lider:%d\n",idLider)
 	for i:= 0 ; i <3 ; i++ {
-		cfg.someterOperacion(idLider)
+		cfg.someterOperacion(idLider,i)
 		fmt.Println("Operación sometida")
 	}
-	time.Sleep(500 * time.Millisecond)
+
 	fmt.Println("Recuperando logs")
 	logs := [][]string{}
 	for i:= 0 ; i <3 ; i++ {
 		logs = append(logs,nil)
-		logs[i] = cfg.obtenerRegistro(i)
-		fmt.Println("Logs obtenidos")
-		fmt.Println(logs[i][0])
+		logs[i] = cfg.obtenerRegistro(i,3)
+		fmt.Printf("Logs obtenidos del nodo %d\n",i)
 	}
 
-	// for i := 0; i < len(logs[0]); i++ {
-	// 	if(logs[0][i] != logs[1][i] || logs[0][i] != logs[2][i]) {
-	// 		panic("logs distintos")
-	// 	}
-	// 	fmt.Println(logs[0][i] + " " + logs[1][i] + " " + logs[2][i] + " ")
-	// }
+	for i := 0; i < len(logs[0]); i++ {
+		if(logs[0][i] != logs[1][i] || logs[0][i] != logs[2][i]) {
+			panic("logs distintos")
+		}
+		fmt.Println(logs[0][i] + " " + logs[1][i] + " " + logs[2][i] + " ")
+	}
+	
 	// Parar réplicas almacenamiento en remoto
 	cfg.stopDistributedProcesses()  //parametros
 
@@ -271,18 +272,70 @@ func (cfg *configDespliegue) tresOperacionesComprometidasEstable(t *testing.T) {
 
 // Se consigue acuerdo a pesar de desconexiones de seguidor -- 3 NODOS RAFT
 func(cfg *configDespliegue) AcuerdoApesarDeSeguidor(t *testing.T) {
-	t.Skip("SKIPPED AcuerdoApesarDeSeguidor")
+	// t.Skip("SKIPPED AcuerdoApesarDeSeguidor")
 
-	// A completar ???
+	fmt.Println(t.Name(), ".....................")
+
+	cfg.startDistributedProcesses()
+
+	cfg.pruebaUnLider(3)
+	_, _, _, idLider := cfg.obtenerEstadoRemoto(0)
+	fmt.Printf("Lider:%d\n",idLider)
 
 	// Comprometer una entrada
+	cfg.someterOperacion(idLider,0)
+	fmt.Println("Operación sometida")
 
 	//  Obtener un lider y, a continuación desconectar una de los nodos Raft
-
+	n:= 0
+	for n==idLider {
+		n=rand.Intn(len(cfg.nodosRaft) - 1)
+	}
+	cfg.PonerPausa(n)
 
 	// Comprobar varios acuerdos con una réplica desconectada
+	for i:= 1 ; i <4 ; i++ {
+		cfg.someterOperacion(idLider,i)
+		fmt.Println("Operación sometida")
+	}
+	logs := [][]string{}
+	for i:= 0 ; i <3 ; i++ {
+		logs = append(logs,nil)
+		if(i != n) {
+			logs[i] = cfg.obtenerRegistro(i,4)
+			fmt.Printf("Logs obtenidos del nodo %d\n",i)
+		}
+	}
 
+	for i := 0; i < len(logs[idLider]); i++ {
+		for nodo  := 0; nodo < len(cfg.nodosRaft) - 1; nodo++ {
+			if(nodo != idLider && nodo != n && logs[nodo][i] != logs[idLider][i]) {
+				panic("No coinciden los logs")
+			}
+		}
+	}
 	// reconectar nodo Raft previamente desconectado y comprobar varios acuerdos
+	cfg.QuitarPausa(n)
+
+	time.Sleep(1500 * time.Millisecond)
+	for i:= 0 ; i <3 ; i++ {
+		logs = append(logs,nil)
+		logs[i] = cfg.obtenerRegistro(i,4)
+		fmt.Printf("Logs obtenidos del nodo %d\n",i)
+	}
+
+	for i := 0; i < len(logs[0]); i++ {
+		if(logs[0][i] != logs[1][i] || logs[0][i] != logs[2][i]) {
+			panic("logs distintos")
+		}
+		fmt.Println(logs[0][i] + " " + logs[1][i] + " " + logs[2][i] + " ")
+	}
+
+	// Parar réplicas almacenamiento en remoto
+	cfg.stopDistributedProcesses()  //parametros
+
+	fmt.Println(".............", t.Name(), "Superado")
+	
 }
 
 // NO se consigue acuerdo al desconectarse mayoría de seguidores -- 3 NODOS RAFT
@@ -387,7 +440,7 @@ func (cfg *configDespliegue) startDistributedProcesses() {
 	}
 
 	// aproximadamente 500 ms para cada arranque por ssh en portatil
-	time.Sleep(2000 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 }
 
 //
@@ -429,28 +482,43 @@ func (cfg *configDespliegue) quitarLider() {
 }
 
 func (cfg *configDespliegue) someterOperacion(
-	indiceNodo int) {
-	operacion := raft.TipoOperacion{"aaa","aa","a"}
-	operacion.Operacion = "AAAAAAAAAAA"
+	indiceNodo int, iteracion int) {
+	operacion := raft.TipoOperacion{"iteracion" + strconv.Itoa(iteracion),"aa","a"}
 	var reply raft.ResultadoRemoto
 	err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.SometerOperacionRaft",
-	operacion, &reply, 10 * time.Millisecond)
+	operacion, &reply, 2000 * time.Millisecond)
 	check.CheckError(err, "Error en llamada RPC SometerOperacion")
-	if(reply.ValorADevolver != "AAAAAAAAAAA") {
-		panic("no esperado valor de op")
-	}
-	time.Sleep(150 * time.Millisecond)
 	return
 }
 
-func (cfg *configDespliegue) obtenerRegistro(indiceNodo int) ([]string){
+func (cfg *configDespliegue) obtenerRegistro(indiceNodo int,n int) ([]string){
 	results := []string{}
 	var reply string
-	for i:=0; i< 3; i++ {
+	for i:=0; i< n; i++ {
 		err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.ObtenerRegistro",
 		i, &reply, 10 * time.Millisecond)
 		check.CheckError(err, "Error en llamada RPC obtener registro")
 		results = append(results,reply)
 	}
 	return results
+}
+
+func (cfg *configDespliegue) PonerPausa(
+	indiceNodo int) {
+	vacio:= raft.Vacio{}
+	var reply raft.Vacio
+	err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.PonerPausa",
+	vacio, &reply, 10 * time.Millisecond)
+	check.CheckError(err, "Error en llamada RPC SometerOperacion")
+	return
+}
+
+func (cfg *configDespliegue) QuitarPausa(
+	indiceNodo int) {
+	vacio:= raft.Vacio{}
+	var reply raft.Vacio
+	err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.QuitarPausa",
+	vacio, &reply, 10 * time.Millisecond)
+	check.CheckError(err, "Error en llamada RPC SometerOperacion")
+	return
 }
