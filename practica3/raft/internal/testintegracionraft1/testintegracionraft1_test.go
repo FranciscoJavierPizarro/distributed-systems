@@ -43,6 +43,9 @@ const (
 	// emparejada con la clave pública en authorized_keys de máquinas remotas
 
 	PRIVKEYFILE = "id_ed25519"
+	errorTime = 100//ms
+	startTime = 500//ms
+	compromiseTime = 2000//ms
 )
 
 // PATH de los ejecutables de modulo golang de servicio Raft
@@ -522,7 +525,7 @@ func (cfg *configDespliegue) startDistributedProcesses() {
 	}
 
 	// aproximadamente 500 ms para cada arranque por ssh en portatil
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(startTime * time.Millisecond)
 }
 
 func (cfg *configDespliegue) stopDistributedProcesses() {
@@ -530,7 +533,7 @@ func (cfg *configDespliegue) stopDistributedProcesses() {
 
 	for _, endPoint := range cfg.nodosRaft {
 		err := endPoint.CallTimeout("NodoRaft.ParaNodo",
-			raft.Vacio{}, &reply, 20*time.Millisecond)
+			raft.Vacio{}, &reply, errorTime*time.Millisecond)
 		check.CheckError(err, "Error en llamada RPC Para nodo")
 	}
 }
@@ -557,7 +560,7 @@ func (cfg *configDespliegue) quitarLider() {
 	time.Sleep(500 * time.Millisecond)
 	_, _, _, idLider := cfg.obtenerEstadoRemoto(0)
 	err := cfg.nodosRaft[idLider].CallTimeout("NodoRaft.DejarLider",
-		raft.Vacio{}, &reply, 10*time.Millisecond)
+		raft.Vacio{}, &reply, errorTime*time.Millisecond)
 	check.CheckError(err, "Error en llamada RPC Para nodo")
 
 }
@@ -568,7 +571,7 @@ func (cfg *configDespliegue) someterOperacion(
 	operacion := raft.TipoOperacion{"iteracion" + strconv.Itoa(iteracion), "aa", "a"}
 	var reply raft.ResultadoRemoto
 	err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.SometerOperacionRaft",
-		operacion, &reply, 2000*time.Millisecond)
+		operacion, &reply, compromiseTime*time.Millisecond)
 	// check.CheckError(err, "Error en llamada RPC SometerOperacion")
 	return err == nil
 }
@@ -579,7 +582,7 @@ func (cfg *configDespliegue) obtenerRegistro(indiceNodo int, n int) []string {
 	var reply string
 	for i := 0; i < n; i++ {
 		err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.ObtenerRegistro",
-			i, &reply, 100*time.Millisecond)
+			i, &reply, errorTime*time.Millisecond)
 		check.CheckError(err, "Error en llamada RPC obtener registro")
 		results = append(results, reply)
 	}
@@ -592,7 +595,7 @@ func (cfg *configDespliegue) PonerPausa(
 	vacio := raft.Vacio{}
 	var reply raft.Vacio
 	err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.PonerPausa",
-		vacio, &reply, 100*time.Millisecond)
+		vacio, &reply, errorTime*time.Millisecond)
 	check.CheckError(err, "Error en llamada RPC PonerPausa")
 	return
 }
@@ -603,7 +606,7 @@ func (cfg *configDespliegue) QuitarPausa(
 	vacio := raft.Vacio{}
 	var reply raft.Vacio
 	err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.QuitarPausa",
-		vacio, &reply, 100*time.Millisecond)
+		vacio, &reply, errorTime*time.Millisecond)
 	check.CheckError(err, "Error en llamada RPC QuitarPausa")
 	return
 }
@@ -615,7 +618,7 @@ func (cfg *configDespliegue) obtenerCompromiso(
 	vacio := raft.Vacio{}
 	var reply []int
 	err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.ObtenerCompromiso",
-		vacio, &reply, 100*time.Millisecond)
+		vacio, &reply, errorTime*time.Millisecond)
 	check.CheckError(err, "Error en llamada RPC ObtenerCompromiso")
 	fmt.Printf("Nlogs: %d, CommitIndex: %d\n", reply[0], reply[1])
 	return

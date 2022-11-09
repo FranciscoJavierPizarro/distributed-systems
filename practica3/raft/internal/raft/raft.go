@@ -66,9 +66,10 @@ import (
 //	CONSTANTES
 //====================================================================
 
-const errorTime = 100
-const electionTime = 3
-
+const errorTime = heartTime * 4//ms
+const electionTime = 2.5//seg
+const reelectionTime = heartTime * 6//ms
+const heartTime = 50//ms
 const (
 	// Constante para fijar valor entero no inicializado
 	IntNOINICIALIZADO = -1
@@ -384,6 +385,7 @@ func (nr *NodoRaft) PedirVoto(peticion *ArgsPeticionVoto,
 	// Vuestro codigo aqui
 	if nr.getState() == "Pausa" {
 		for nr.getState() == "Pausa" {
+			time.Sleep(heartTime * time.Millisecond)
 		}
 		return nil
 	}
@@ -407,6 +409,7 @@ func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 	results *Results) error {
 	if nr.getState() == "Pausa" {
 		for nr.getState() == "Pausa" {
+			time.Sleep(heartTime * time.Millisecond)
 		}
 		return nil
 	}
@@ -510,7 +513,7 @@ func (nr *NodoRaft) runSeguidor() {
 	nr.Logger.Println("Now i am a follower")
 	s1 := rand.NewSource(time.Now().UnixNano())
 	r1 := rand.New(s1)
-	timeToChangeMode := time.Millisecond * time.Duration(1000+(r1.Intn(2000)))
+	timeToChangeMode := time.Millisecond * time.Duration(errorTime+(r1.Intn(errorTime * 3)))
 	ticker := time.NewTicker(timeToChangeMode)
 	for nr.getState() == "Seguidor" {
 		select {
@@ -530,7 +533,7 @@ func (nr *NodoRaft) runSeguidor() {
 func (nr *NodoRaft) runCandidato() {
 	nr.Logger.Println("Now i am a candidate")
 	nr.CurrentState.CurrentTerm++
-	ticker := time.NewTicker(time.Second * electionTime)
+	ticker := time.NewTicker(time.Millisecond * reelectionTime)
 	nr.CurrentState.VotedFor = nr.Yo
 	for nr.getState() == "Candidato" {
 		votes := 1 //se vota a si mismo
@@ -559,9 +562,9 @@ func (nr *NodoRaft) runCandidato() {
 func (nr *NodoRaft) runLider() {
 	nr.Logger.Println("Now i am a leader")
 	nr.lanzarLatidos()
-	s1 := rand.NewSource(time.Now().UnixNano())
-	r1 := rand.New(s1)
-	heartPulse := time.Millisecond * time.Duration(300+r1.Intn(500))
+	// s1 := rand.NewSource(time.Now().UnixNano())
+	// r1 := rand.New(s1)
+	heartPulse := time.Millisecond * time.Duration(heartTime)
 	ticker := time.NewTicker(heartPulse)
 
 	for nr.getState() == "Lider" {
@@ -576,6 +579,7 @@ func (nr *NodoRaft) runLider() {
 func (nr *NodoRaft) runPausa() {
 	nr.Logger.Println("Now i am in pause")
 	for nr.getState() == "Pausa" {
+		time.Sleep(heartTime * time.Millisecond)
 	}
 }
 
@@ -682,6 +686,7 @@ func (nr *NodoRaft) ObtenerRegistro(args int,
 	nr.printLogs()
 	if nr.getState() == "Pausa" {
 		for nr.getState() == "Pausa" {
+			time.Sleep(heartTime * time.Millisecond)
 		}
 		return nil
 	}
