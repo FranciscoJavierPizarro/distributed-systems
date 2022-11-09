@@ -95,13 +95,7 @@ type NodoRaft struct {
 	Nodos   []rpctimeout.HostPort
 	Yo      int // indice de este nodos en campo array "nodos"
 	IdLider int
-	// Utilización opcional de este logger para depuración
-	// Cada nodo Raft tiene su propio registro de trazas (logs)
 	Logger *log.Logger
-
-	// Vuestros datos aqui.
-
-	// mirar figura 2 para descripción del estado que debe mantenre un nodo Raft
 	CurrentState State
 
 	StillAlive   chan bool
@@ -129,7 +123,18 @@ func NuevoNodo(nodos []rpctimeout.HostPort, yo int,
 	nr.Nodos = nodos
 	nr.Yo = yo
 	nr.IdLider = -1
+	nr.crearLogger(nodos,yo)
+	nr.StillAlive = make(chan bool)
+	nr.VoteRecivied = make(chan bool)
+	nr.Comprommised = []chan bool{make(chan bool)}
 
+	nr.createInitialState()
+
+	go nr.run(canalAplicarOperacion)
+	return nr
+}
+
+func (nr *NodoRaft) crearLogger(nodos []rpctimeout.HostPort, yo int) {
 	if kEnableDebugLogs {
 		nombreNodo := nodos[yo].Host() + "_" + nodos[yo].Port()
 		logPrefix := fmt.Sprintf("%s", nombreNodo)
@@ -156,11 +161,9 @@ func NuevoNodo(nodos []rpctimeout.HostPort, yo int,
 	} else {
 		nr.Logger = log.New(ioutil.Discard, "", 0)
 	}
-	nr.StillAlive = make(chan bool)
-	nr.VoteRecivied = make(chan bool)
-	nr.Comprommised = []chan bool{make(chan bool)}
+}
 
-	// Añadir codigo de inicialización
+func (nr *NodoRaft) createInitialState() {
 	nr.CurrentState = State{}
 
 	nr.CurrentState.CurrentTerm = 0
@@ -168,19 +171,14 @@ func NuevoNodo(nodos []rpctimeout.HostPort, yo int,
 	nr.CurrentState.Logs = make([]Log, 0)
 	nr.CurrentState.CommitIndex = 0
 	nr.CurrentState.LastApplied = 0
-
+	nr.CurrentState.MatchIndex = make([]int, len(nr.Nodos))
 	nr.CurrentState.NextIndex = make([]int, len(nr.Nodos))
 	for i := 0; i < len(nr.Nodos); i++ {
 		nr.CurrentState.NextIndex[i] = 1
-	}
-	nr.CurrentState.MatchIndex = make([]int, len(nr.Nodos))
-	for i := 0; i < len(nr.Nodos); i++ {
 		nr.CurrentState.MatchIndex[i] = 0
 	}
+	
 	nr.CurrentState.Rol = "Seguidor"
-
-	go nr.run(canalAplicarOperacion)
-	return nr
 }
 
 // Metodo Para() utilizado cuando no se necesita mas al nodo
@@ -210,10 +208,6 @@ func (nr *NodoRaft) obtenerEstado() (int, int, bool, int) {
 	return yo, mandato, esLider, idLider
 }
 
-// El servicio que utilice Raft (base de datos clave/valor, por ejemplo)
-// Quiere buscar un acuerdo de posicion en registro para siguiente operacion
-// solicitada por cliente.
-
 // Si el nodo no es el lider, devolver falso
 // Sino, comenzar la operacion de consenso sobre la operacion y devolver en
 // cuanto se consiga
@@ -234,13 +228,10 @@ func (nr *NodoRaft) someterOperacion(operacion TipoOperacion) (int, int,
 	idLider := nr.IdLider
 	valorADevolver := operacion.Operacion
 
-	// Vuestro codigo aqui
 
 	if EsLider {
 		nr.Comprommised = append(nr.Comprommised, make(chan bool))
 		nr.CurrentState.Logs = append(nr.CurrentState.Logs, Log{nr.CurrentState.CurrentTerm, operacion})
-		//DEVOLVER EL VALOR?
-		// time.Sleep(500 * time.Millisecond)
 		<-nr.Comprommised[indice-1]
 	}
 
@@ -358,7 +349,6 @@ type Results struct {
 // Metodo de tratamiento de llamadas RPC AppendEntries
 func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 	results *Results) error {
-	// Completar....
 	if nr.getState() == "Pausa" {
 		for nr.getState() == "Pausa" {
 		}
@@ -461,11 +451,11 @@ func (nr *NodoRaft) runSeguidor() {
 		select {
 		case <-nr.StillAlive:
 			//Reiniciar contador
-			ticker.Reset(timeToChangeMode) //¿?funcionara
+			ticker.Reset(timeToChangeMode)
 		case <-ticker.C:
 			//Convertirse a candidato
 			ticker.Stop()
-			if nr.getState() != "Pausa" {
+			if nr.getState() != "Pausa" {//bug por eso if
 				nr.CurrentState.Rol = "Candidato"
 			}
 		}
@@ -479,15 +469,12 @@ func (nr *NodoRaft) runCandidato() {
 	nr.CurrentState.VotedFor = nr.Yo
 	for nr.getState() == "Candidato" {
 		votes := 1 //se vota a si mismo
-		//enviar petición votos?
 		notTimeout := true
 		go nr.lanzarPeticionesVotos()
 		for !(votes >= ((len(nr.Nodos) / 2) + 1)) && notTimeout { //proceso elección
-
 			select {
-			case <-nr.VoteRecivied:
+			case <-nr.VoteRecivied://Sumar voto y comprobar mayoría
 				nr.Logger.Println("Voto procesado")
-				//Sumar voto y comprobar mayoría
 				votes += 1
 				if votes >= ((len(nr.Nodos)/2)+1) && nr.getState() != "Pausa" {
 					nr.Logger.Println("Voy a ser lider")
@@ -496,12 +483,9 @@ func (nr *NodoRaft) runCandidato() {
 					nr.CurrentState.Rol = "Lider"
 					nr.Mux.Unlock()
 				}
-			case <-ticker.C:
-				//Reiniciar elección
-				// ticker.Reset(time.Second * electionTime)
+			case <-ticker.C://Reiniciar elección
 				notTimeout = false
 				nr.CurrentState.CurrentTerm++
-
 			}
 		}
 	}
@@ -518,7 +502,7 @@ func (nr *NodoRaft) runLider() {
 	for nr.getState() == "Lider" {
 		select {
 		case <-ticker.C:
-			nr.lanzarLatidos() //Enviar latidos
+			nr.lanzarLatidos() //Enviar latidos/append
 		}
 	}
 	ticker.Stop()
@@ -562,47 +546,48 @@ func (nr *NodoRaft) lanzarPeticionesVotos() {
 }
 
 func (nr *NodoRaft) lanzarLatidos() {
-
 	var reply Results
 	for i := 0; i < len(nr.Nodos); i++ {
 		if i != nr.Yo {
 			args := ArgAppendEntries{
 				nr.CurrentState.CurrentTerm,
-				nr.Yo,
-				0,
-				0,
-				make([]Log, 0),
+				nr.Yo, 0, 0, make([]Log, 0),
 				nr.CurrentState.CommitIndex,
 			}
 			if nr.CurrentState.NextIndex[i] <= len(nr.CurrentState.Logs) {
-				nr.Logger.Println("ENTRAAAAAA")
 				args.Entries = nr.CurrentState.Logs[nr.CurrentState.MatchIndex[i]:len(nr.CurrentState.Logs)]
 				args.PrevLogIndex = nr.CurrentState.MatchIndex[i]
 				args.PrevLogTerm = nr.CurrentState.Logs[args.PrevLogIndex].Term
 			}
-			go func(i int, args ArgAppendEntries, reply Results) {
-				if nr.enviarAppendEntries(i, &args, &reply) {
-					if len(args.Entries) == 0 {
-						nr.Logger.Println("Latido enviado")
-					} else {
-						nr.Logger.Println("Append enviado")
-
-						if reply.Sucess {
-							nr.CurrentState.MatchIndex[i] += len(args.Entries)
-							nr.CurrentState.NextIndex[i] += len(args.Entries)
-							nr.Logger.Println("Append correcto")
-						}
-					}
-				} else {
-					if len(args.Entries) == 0 {
-						nr.Logger.Println("Latido fallido")
-					} else {
-						nr.Logger.Println("RPC fallido")
-					}
-				}
-			}(i, args, reply)
+			go nr.enviarRPC(i, args, reply)
 		}
 	}
+	nr.actualizarEntradasComprometidas()
+}
+
+func (nr *NodoRaft) enviarRPC (i int, args ArgAppendEntries, reply Results) {
+	if nr.enviarAppendEntries(i, &args, &reply) {
+		if len(args.Entries) == 0 {
+			nr.Logger.Println("Latido enviado")
+		} else {
+			nr.Logger.Println("Append enviado")
+
+			if reply.Sucess {
+				nr.CurrentState.MatchIndex[i] += len(args.Entries)
+				nr.CurrentState.NextIndex[i] += len(args.Entries)
+				nr.Logger.Println("Append correcto")
+			}
+		}
+	} else {
+		if len(args.Entries) == 0 {
+			nr.Logger.Println("Latido fallido")
+		} else {
+			nr.Logger.Println("RPC fallido")
+		}
+	}
+}
+
+func (nr *NodoRaft) actualizarEntradasComprometidas() {
 	contador := 1
 	for i := 0; i < len(nr.Nodos); i++ {
 		if i != nr.Yo && nr.CurrentState.MatchIndex[i] == len(nr.CurrentState.Logs) {

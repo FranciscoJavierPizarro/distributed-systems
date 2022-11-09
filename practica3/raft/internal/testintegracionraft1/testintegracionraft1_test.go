@@ -159,9 +159,7 @@ func (cfg *configDespliegue) stop() {
 // Se pone en marcha una replica ?? - 3 NODOS RAFT
 func (cfg *configDespliegue) soloArranqueYparadaTest1(t *testing.T) {
 	//t.Skip("SKIPPED soloArranqueYparadaTest1")
-
 	fmt.Println(t.Name(), ".....................")
-
 	cfg.t = t // Actualizar la estructura de datos de tests para errores
 
 	// Poner en marcha replicas en remoto con un tiempo de espera incluido
@@ -178,16 +176,13 @@ func (cfg *configDespliegue) soloArranqueYparadaTest1(t *testing.T) {
 
 	// Parar réplicas almacenamiento en remoto
 	cfg.stopDistributedProcesses()
-
 	fmt.Println(".............", t.Name(), "Superado")
 }
 
 // Primer lider en marcha - 3 NODOS RAFT
 func (cfg *configDespliegue) elegirPrimerLiderTest2(t *testing.T) {
 	// t.Skip("SKIPPED ElegirPrimerLiderTest2")
-
 	fmt.Println(t.Name(), ".....................")
-
 	cfg.startDistributedProcesses()
 
 	// Se ha elegido lider ?
@@ -196,18 +191,14 @@ func (cfg *configDespliegue) elegirPrimerLiderTest2(t *testing.T) {
 
 	// Parar réplicas alamcenamiento en remoto
 	cfg.stopDistributedProcesses() // Parametros
-
 	fmt.Println(".............", t.Name(), "Superado")
 }
 
 // Fallo de un primer lider y reeleccion de uno nuevo - 3 NODOS RAFT
 func (cfg *configDespliegue) falloAnteriorElegirNuevoLiderTest3(t *testing.T) {
 	//t.Skip("SKIPPED FalloAnteriorElegirNuevoLiderTest3")
-
 	fmt.Println(t.Name(), ".....................")
-
 	cfg.startDistributedProcesses()
-
 	fmt.Printf("Lider inicial\n")
 	cfg.pruebaUnLider(3)
 
@@ -218,26 +209,20 @@ func (cfg *configDespliegue) falloAnteriorElegirNuevoLiderTest3(t *testing.T) {
 
 	// Parar réplicas almacenamiento en remoto
 	cfg.stopDistributedProcesses() //parametros
-
 	fmt.Println(".............", t.Name(), "Superado")
 }
 
 // 3 operaciones comprometidas con situacion estable y sin fallos - 3 NODOS RAFT
 func (cfg *configDespliegue) tresOperacionesComprometidasEstable(t *testing.T) {
 	//	t.Skip("SKIPPED tresOperacionesComprometidasEstable")
-
-	// A completar ???
-
 	fmt.Println(t.Name(), ".....................")
-
 	cfg.startDistributedProcesses()
-
 	fmt.Printf("Tres operaciones comprometidas establesl\n")
 	time.Sleep(300 * time.Millisecond)
 	cfg.pruebaUnLider(3)
-
 	_, _, _, idLider := cfg.obtenerEstadoRemoto(0)
 	fmt.Printf("Lider:%d\n", idLider)
+
 	for i := 0; i < 3; i++ {
 		cfg.someterOperacion(idLider, i)
 		fmt.Println("Operación sometida")
@@ -257,25 +242,19 @@ func (cfg *configDespliegue) tresOperacionesComprometidasEstable(t *testing.T) {
 		}
 		fmt.Println(logs[0][i] + " " + logs[1][i] + " " + logs[2][i] + " ")
 	}
-
 	// Parar réplicas almacenamiento en remoto
 	cfg.stopDistributedProcesses() //parametros
-
 	fmt.Println(".............", t.Name(), "Superado")
 }
 
 // Se consigue acuerdo a pesar de desconexiones de seguidor -- 3 NODOS RAFT
 func (cfg *configDespliegue) AcuerdoApesarDeSeguidor(t *testing.T) {
 	// t.Skip("SKIPPED AcuerdoApesarDeSeguidor")
-
 	fmt.Println(t.Name(), ".....................")
-
 	cfg.startDistributedProcesses()
-
 	cfg.pruebaUnLider(3)
 	_, _, _, idLider := cfg.obtenerEstadoRemoto(0)
 	fmt.Printf("Lider:%d\n", idLider)
-
 	// Comprometer una entrada
 	cfg.someterOperacion(idLider, 0)
 	fmt.Println("Operación sometida")
@@ -324,26 +303,19 @@ func (cfg *configDespliegue) AcuerdoApesarDeSeguidor(t *testing.T) {
 		}
 		fmt.Println(logs[0][i] + " " + logs[1][i] + " " + logs[2][i] + " ")
 	}
-
 	// Parar réplicas almacenamiento en remoto
 	cfg.stopDistributedProcesses() //parametros
-
 	fmt.Println(".............", t.Name(), "Superado")
-
 }
 
 // NO se consigue acuerdo al desconectarse mayoría de seguidores -- 3 NODOS RAFT
 func (cfg *configDespliegue) SinAcuerdoPorFallos(t *testing.T) {
 	//t.Skip("SKIPPED SinAcuerdoPorFallos")
-
 	fmt.Println(t.Name(), ".....................")
-
 	cfg.startDistributedProcesses()
-
 	cfg.pruebaUnLider(3)
 	_, _, _, idLider := cfg.obtenerEstadoRemoto(0)
 	fmt.Printf("Lider:%d\n", idLider)
-
 	// Comprometer una entrada
 	cfg.someterOperacion(idLider, 0)
 	fmt.Println("Operación sometida")
@@ -402,7 +374,6 @@ func (cfg *configDespliegue) SinAcuerdoPorFallos(t *testing.T) {
 
 	// Parar réplicas almacenamiento en remoto
 	cfg.stopDistributedProcesses() //parametros
-
 	fmt.Println(".............", t.Name(), "Superado")
 }
 
@@ -412,9 +383,7 @@ func (cfg *configDespliegue) SometerConcurrentementeOperaciones(t *testing.T) {
 
 	// Obtener un lider y, a continuación someter una operacion
 	fmt.Println(t.Name(), ".....................")
-
 	cfg.startDistributedProcesses()
-
 	cfg.pruebaUnLider(3)
 	_, _, _, idLider := cfg.obtenerEstadoRemoto(0)
 	fmt.Printf("Lider:%d\n", idLider)
@@ -561,7 +530,7 @@ func (cfg *configDespliegue) stopDistributedProcesses() {
 
 	for _, endPoint := range cfg.nodosRaft {
 		err := endPoint.CallTimeout("NodoRaft.ParaNodo",
-			raft.Vacio{}, &reply, 10*time.Millisecond)
+			raft.Vacio{}, &reply, 20*time.Millisecond)
 		check.CheckError(err, "Error en llamada RPC Para nodo")
 	}
 }
