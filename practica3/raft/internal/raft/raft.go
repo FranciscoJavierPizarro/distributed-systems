@@ -484,7 +484,7 @@ func (nr *NodoRaft) enviarAppendEntries(nodo int, args *ArgAppendEntries,
 
 func (nr *NodoRaft) run(canalAplicarOperacion chan AplicaOperacion) {
 	go nr.runCommonTasks(canalAplicarOperacion)
-	time.Sleep(7000 * time.Millisecond)//para el test1 el cual si ya se ha elegido lider
+	//time.Sleep(7000 * time.Millisecond)//para el test1 el cual si ya se ha elegido lider
 	//falla (es para compensar el tiempo de arranque de distributed process)
 	for {
 
