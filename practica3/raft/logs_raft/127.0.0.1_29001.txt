@@ -1,78 +1,102 @@
-127.0.0.1_29001 -> 11:27:44.009384 raft.go:160: logger initialized
-127.0.0.1_29001 -> 11:27:44.009563 raft.go:445: Now i am a follower
-127.0.0.1_29001 -> 11:27:44.675819 raft.go:205: Estado actual 0 0 false -1
-127.0.0.1_29001 -> 11:27:45.177755 raft.go:205: Estado actual 0 0 false -1
-127.0.0.1_29001 -> 11:27:45.679300 raft.go:205: Estado actual 0 0 false -1
-127.0.0.1_29001 -> 11:27:46.181088 raft.go:205: Estado actual 0 0 false -1
-127.0.0.1_29001 -> 11:27:46.412395 raft.go:318: RPC PedirVoto called from other replica
-127.0.0.1_29001 -> 11:27:46.412821 raft.go:359: HeartPulse recivied
-127.0.0.1_29001 -> 11:27:46.412834 raft.go:397: RPC done
-127.0.0.1_29001 -> 11:27:46.682746 raft.go:205: Estado actual 0 0 false 2
-127.0.0.1_29001 -> 11:27:46.683528 raft.go:205: Estado actual 0 0 false 2
-127.0.0.1_29001 -> 11:27:46.961315 raft.go:362: RPC AppendEntries called from other replica
-127.0.0.1_29001 -> 11:27:46.961335 raft.go:397: RPC done
-127.0.0.1_29001 -> 11:27:47.509555 raft.go:359: HeartPulse recivied
-127.0.0.1_29001 -> 11:27:47.509589 raft.go:397: RPC done
-127.0.0.1_29001 -> 11:27:47.509772 raft.go:621: LOGS:
-127.0.0.1_29001 -> 11:27:47.509788 raft.go:623: iteracion0
-127.0.0.1_29001 -> 11:27:47.509794 raft.go:616: Log enviado:iteracion0
-127.0.0.1_29001 -> 11:27:47.761530 raft.go:205: Estado actual 0 1 false 2
-127.0.0.1_29001 -> 11:27:47.762262 raft.go:645: Situacion de compromiso enviada
-127.0.0.1_29001 -> 11:27:48.011236 raft.go:205: Estado actual 0 1 false 2
-127.0.0.1_29001 -> 11:27:48.011531 raft.go:645: Situacion de compromiso enviada
-127.0.0.1_29001 -> 11:27:48.057189 raft.go:362: RPC AppendEntries called from other replica
-127.0.0.1_29001 -> 11:27:48.057217 raft.go:397: RPC done
-127.0.0.1_29001 -> 11:27:48.261568 raft.go:205: Estado actual 0 1 false 2
-127.0.0.1_29001 -> 11:27:48.261792 raft.go:645: Situacion de compromiso enviada
-127.0.0.1_29001 -> 11:27:48.511851 raft.go:205: Estado actual 0 1 false 2
-127.0.0.1_29001 -> 11:27:48.512154 raft.go:645: Situacion de compromiso enviada
-127.0.0.1_29001 -> 11:27:48.604930 raft.go:359: HeartPulse recivied
-127.0.0.1_29001 -> 11:27:48.604948 raft.go:397: RPC done
-127.0.0.1_29001 -> 11:27:48.605022 raft.go:621: LOGS:
-127.0.0.1_29001 -> 11:27:48.605032 raft.go:623: iteracion0
-127.0.0.1_29001 -> 11:27:48.605036 raft.go:623: iteracion3
-127.0.0.1_29001 -> 11:27:48.605039 raft.go:623: iteracion4
-127.0.0.1_29001 -> 11:27:48.605041 raft.go:623: iteracion2
-127.0.0.1_29001 -> 11:27:48.605044 raft.go:623: iteracion5
-127.0.0.1_29001 -> 11:27:48.605046 raft.go:623: iteracion1
-127.0.0.1_29001 -> 11:27:48.605049 raft.go:616: Log enviado:iteracion0
-127.0.0.1_29001 -> 11:27:48.605276 raft.go:621: LOGS:
-127.0.0.1_29001 -> 11:27:48.605289 raft.go:623: iteracion0
-127.0.0.1_29001 -> 11:27:48.605295 raft.go:623: iteracion3
-127.0.0.1_29001 -> 11:27:48.605298 raft.go:623: iteracion4
-127.0.0.1_29001 -> 11:27:48.605301 raft.go:623: iteracion2
-127.0.0.1_29001 -> 11:27:48.605303 raft.go:623: iteracion5
-127.0.0.1_29001 -> 11:27:48.605306 raft.go:623: iteracion1
-127.0.0.1_29001 -> 11:27:48.605309 raft.go:616: Log enviado:iteracion3
-127.0.0.1_29001 -> 11:27:48.605492 raft.go:621: LOGS:
-127.0.0.1_29001 -> 11:27:48.605498 raft.go:623: iteracion0
-127.0.0.1_29001 -> 11:27:48.605501 raft.go:623: iteracion3
-127.0.0.1_29001 -> 11:27:48.605505 raft.go:623: iteracion4
-127.0.0.1_29001 -> 11:27:48.605507 raft.go:623: iteracion2
-127.0.0.1_29001 -> 11:27:48.605510 raft.go:623: iteracion5
-127.0.0.1_29001 -> 11:27:48.605513 raft.go:623: iteracion1
-127.0.0.1_29001 -> 11:27:48.605515 raft.go:616: Log enviado:iteracion4
-127.0.0.1_29001 -> 11:27:48.605696 raft.go:621: LOGS:
-127.0.0.1_29001 -> 11:27:48.605703 raft.go:623: iteracion0
-127.0.0.1_29001 -> 11:27:48.605706 raft.go:623: iteracion3
-127.0.0.1_29001 -> 11:27:48.605708 raft.go:623: iteracion4
-127.0.0.1_29001 -> 11:27:48.605711 raft.go:623: iteracion2
-127.0.0.1_29001 -> 11:27:48.605715 raft.go:623: iteracion5
-127.0.0.1_29001 -> 11:27:48.605719 raft.go:623: iteracion1
-127.0.0.1_29001 -> 11:27:48.605724 raft.go:616: Log enviado:iteracion2
-127.0.0.1_29001 -> 11:27:48.605908 raft.go:621: LOGS:
-127.0.0.1_29001 -> 11:27:48.605924 raft.go:623: iteracion0
-127.0.0.1_29001 -> 11:27:48.605929 raft.go:623: iteracion3
-127.0.0.1_29001 -> 11:27:48.605931 raft.go:623: iteracion4
-127.0.0.1_29001 -> 11:27:48.605934 raft.go:623: iteracion2
-127.0.0.1_29001 -> 11:27:48.605937 raft.go:623: iteracion5
-127.0.0.1_29001 -> 11:27:48.605939 raft.go:623: iteracion1
-127.0.0.1_29001 -> 11:27:48.605942 raft.go:616: Log enviado:iteracion5
-127.0.0.1_29001 -> 11:27:48.606105 raft.go:621: LOGS:
-127.0.0.1_29001 -> 11:27:48.606115 raft.go:623: iteracion0
-127.0.0.1_29001 -> 11:27:48.606121 raft.go:623: iteracion3
-127.0.0.1_29001 -> 11:27:48.606126 raft.go:623: iteracion4
-127.0.0.1_29001 -> 11:27:48.606131 raft.go:623: iteracion2
-127.0.0.1_29001 -> 11:27:48.606135 raft.go:623: iteracion5
-127.0.0.1_29001 -> 11:27:48.606140 raft.go:623: iteracion1
-127.0.0.1_29001 -> 11:27:48.606145 raft.go:616: Log enviado:iteracion1
+127.0.0.1_29001 -> 12:00:47.777242 raft.go:198: logger initialized
+127.0.0.1_29001 -> 12:00:47.777432 raft.go:508: Now i am a follower
+127.0.0.1_29001 -> 12:00:48.423425 raft.go:247: Estado actual 0 0 false -1
+127.0.0.1_29001 -> 12:00:48.925321 raft.go:247: Estado actual 0 0 false -1
+127.0.0.1_29001 -> 12:00:49.426687 raft.go:247: Estado actual 0 0 false -1
+127.0.0.1_29001 -> 12:00:49.841345 raft.go:529: Now i am a candidate
+127.0.0.1_29001 -> 12:00:49.841909 raft.go:596: Voto solicitado
+127.0.0.1_29001 -> 12:00:49.842020 raft.go:598: Voto recibido
+127.0.0.1_29001 -> 12:00:49.842030 raft.go:540: Voto procesado
+127.0.0.1_29001 -> 12:00:49.841921 raft.go:596: Voto solicitado
+127.0.0.1_29001 -> 12:00:49.842052 raft.go:598: Voto recibido
+127.0.0.1_29001 -> 12:00:49.842036 raft.go:543: Voy a ser lider
+127.0.0.1_29001 -> 12:00:49.842064 raft.go:558: Now i am a leader
+127.0.0.1_29001 -> 12:00:49.842069 raft.go:670: Comprometido hasta log 0
+127.0.0.1_29001 -> 12:00:49.842386 raft.go:638: Latido enviado
+127.0.0.1_29001 -> 12:00:49.842440 raft.go:638: Latido enviado
+127.0.0.1_29001 -> 12:00:49.928165 raft.go:247: Estado actual 0 1 true 0
+127.0.0.1_29001 -> 12:00:49.928928 raft.go:247: Estado actual 0 1 true 0
+127.0.0.1_29001 -> 12:00:49.929180 raft.go:333: Operación solicitada: iteracion0
+127.0.0.1_29001 -> 12:00:50.271194 raft.go:640: Append enviado
+127.0.0.1_29001 -> 12:00:50.271222 raft.go:645: Append correcto
+127.0.0.1_29001 -> 12:00:50.271269 raft.go:640: Append enviado
+127.0.0.1_29001 -> 12:00:50.271281 raft.go:645: Append correcto
+127.0.0.1_29001 -> 12:00:50.698847 raft.go:670: Comprometido hasta log 1
+127.0.0.1_29001 -> 12:00:50.698874 raft.go:335: Operación sometida
+127.0.0.1_29001 -> 12:00:50.699358 raft.go:638: Latido enviado
+127.0.0.1_29001 -> 12:00:50.699362 raft.go:638: Latido enviado
+127.0.0.1_29001 -> 12:00:50.699437 raft.go:722: LOGS:
+127.0.0.1_29001 -> 12:00:50.699448 raft.go:724: iteracion0
+127.0.0.1_29001 -> 12:00:50.699452 raft.go:687: Log enviado:iteracion0
+127.0.0.1_29001 -> 12:00:50.700166 raft.go:333: Operación solicitada: iteracion5
+127.0.0.1_29001 -> 12:00:50.700186 raft.go:333: Operación solicitada: iteracion2
+127.0.0.1_29001 -> 12:00:50.700224 raft.go:333: Operación solicitada: iteracion4
+127.0.0.1_29001 -> 12:00:50.700235 raft.go:333: Operación solicitada: iteracion1
+127.0.0.1_29001 -> 12:00:50.700364 raft.go:333: Operación solicitada: iteracion3
+127.0.0.1_29001 -> 12:00:50.950710 raft.go:247: Estado actual 0 1 true 0
+127.0.0.1_29001 -> 12:00:50.950972 raft.go:709: Situacion de compromiso enviada
+127.0.0.1_29001 -> 12:00:51.126765 raft.go:640: Append enviado
+127.0.0.1_29001 -> 12:00:51.126780 raft.go:645: Append correcto
+127.0.0.1_29001 -> 12:00:51.126781 raft.go:640: Append enviado
+127.0.0.1_29001 -> 12:00:51.126820 raft.go:645: Append correcto
+127.0.0.1_29001 -> 12:00:51.200804 raft.go:247: Estado actual 0 1 true 0
+127.0.0.1_29001 -> 12:00:51.201037 raft.go:709: Situacion de compromiso enviada
+127.0.0.1_29001 -> 12:00:51.450831 raft.go:247: Estado actual 0 1 true 0
+127.0.0.1_29001 -> 12:00:51.451110 raft.go:709: Situacion de compromiso enviada
+127.0.0.1_29001 -> 12:00:51.554444 raft.go:670: Comprometido hasta log 6
+127.0.0.1_29001 -> 12:00:51.554465 raft.go:335: Operación sometida
+127.0.0.1_29001 -> 12:00:51.554488 raft.go:335: Operación sometida
+127.0.0.1_29001 -> 12:00:51.554450 raft.go:335: Operación sometida
+127.0.0.1_29001 -> 12:00:51.554458 raft.go:335: Operación sometida
+127.0.0.1_29001 -> 12:00:51.554535 raft.go:335: Operación sometida
+127.0.0.1_29001 -> 12:00:51.554887 raft.go:638: Latido enviado
+127.0.0.1_29001 -> 12:00:51.554944 raft.go:638: Latido enviado
+127.0.0.1_29001 -> 12:00:51.555087 raft.go:722: LOGS:
+127.0.0.1_29001 -> 12:00:51.555100 raft.go:724: iteracion0
+127.0.0.1_29001 -> 12:00:51.555107 raft.go:724: iteracion5
+127.0.0.1_29001 -> 12:00:51.555112 raft.go:724: iteracion2
+127.0.0.1_29001 -> 12:00:51.555117 raft.go:724: iteracion4
+127.0.0.1_29001 -> 12:00:51.555122 raft.go:724: iteracion1
+127.0.0.1_29001 -> 12:00:51.555129 raft.go:724: iteracion3
+127.0.0.1_29001 -> 12:00:51.555133 raft.go:687: Log enviado:iteracion0
+127.0.0.1_29001 -> 12:00:51.555421 raft.go:722: LOGS:
+127.0.0.1_29001 -> 12:00:51.555432 raft.go:724: iteracion0
+127.0.0.1_29001 -> 12:00:51.555435 raft.go:724: iteracion5
+127.0.0.1_29001 -> 12:00:51.555439 raft.go:724: iteracion2
+127.0.0.1_29001 -> 12:00:51.555441 raft.go:724: iteracion4
+127.0.0.1_29001 -> 12:00:51.555444 raft.go:724: iteracion1
+127.0.0.1_29001 -> 12:00:51.555447 raft.go:724: iteracion3
+127.0.0.1_29001 -> 12:00:51.555450 raft.go:687: Log enviado:iteracion5
+127.0.0.1_29001 -> 12:00:51.555657 raft.go:722: LOGS:
+127.0.0.1_29001 -> 12:00:51.555670 raft.go:724: iteracion0
+127.0.0.1_29001 -> 12:00:51.555676 raft.go:724: iteracion5
+127.0.0.1_29001 -> 12:00:51.555681 raft.go:724: iteracion2
+127.0.0.1_29001 -> 12:00:51.555685 raft.go:724: iteracion4
+127.0.0.1_29001 -> 12:00:51.555690 raft.go:724: iteracion1
+127.0.0.1_29001 -> 12:00:51.555694 raft.go:724: iteracion3
+127.0.0.1_29001 -> 12:00:51.555698 raft.go:687: Log enviado:iteracion2
+127.0.0.1_29001 -> 12:00:51.555891 raft.go:722: LOGS:
+127.0.0.1_29001 -> 12:00:51.555902 raft.go:724: iteracion0
+127.0.0.1_29001 -> 12:00:51.555909 raft.go:724: iteracion5
+127.0.0.1_29001 -> 12:00:51.555913 raft.go:724: iteracion2
+127.0.0.1_29001 -> 12:00:51.555918 raft.go:724: iteracion4
+127.0.0.1_29001 -> 12:00:51.555922 raft.go:724: iteracion1
+127.0.0.1_29001 -> 12:00:51.555926 raft.go:724: iteracion3
+127.0.0.1_29001 -> 12:00:51.555930 raft.go:687: Log enviado:iteracion4
+127.0.0.1_29001 -> 12:00:51.556115 raft.go:722: LOGS:
+127.0.0.1_29001 -> 12:00:51.556126 raft.go:724: iteracion0
+127.0.0.1_29001 -> 12:00:51.556131 raft.go:724: iteracion5
+127.0.0.1_29001 -> 12:00:51.556136 raft.go:724: iteracion2
+127.0.0.1_29001 -> 12:00:51.556141 raft.go:724: iteracion4
+127.0.0.1_29001 -> 12:00:51.556161 raft.go:724: iteracion1
+127.0.0.1_29001 -> 12:00:51.556184 raft.go:724: iteracion3
+127.0.0.1_29001 -> 12:00:51.556189 raft.go:687: Log enviado:iteracion1
+127.0.0.1_29001 -> 12:00:51.556383 raft.go:722: LOGS:
+127.0.0.1_29001 -> 12:00:51.556397 raft.go:724: iteracion0
+127.0.0.1_29001 -> 12:00:51.556404 raft.go:724: iteracion5
+127.0.0.1_29001 -> 12:00:51.556408 raft.go:724: iteracion2
+127.0.0.1_29001 -> 12:00:51.556414 raft.go:724: iteracion4
+127.0.0.1_29001 -> 12:00:51.556419 raft.go:724: iteracion1
+127.0.0.1_29001 -> 12:00:51.556423 raft.go:724: iteracion3
+127.0.0.1_29001 -> 12:00:51.556428 raft.go:687: Log enviado:iteracion3
+127.0.0.1_29001 -> 12:00:51.559873 raft.go:709: Situacion de compromiso enviada

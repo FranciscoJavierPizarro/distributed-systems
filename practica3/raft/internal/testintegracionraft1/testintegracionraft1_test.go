@@ -357,7 +357,7 @@ func (cfg *configDespliegue) SinAcuerdoPorFallos(t *testing.T) {
 			cfg.QuitarPausa(i)
 		}
 	}
-
+	//Comprueba la integridad de los registros
 	time.Sleep(1500 * time.Millisecond)
 	logs = [][]string{}
 	for i := 0; i < 3; i++ {
@@ -438,7 +438,7 @@ func (cfg *configDespliegue) SometerConcurrentementeOperaciones(t *testing.T) {
 			}
 		}
 	}
-
+	//Comprueba la integridad de los logs
 	logs = [][]string{}
 	for i := 0; i < 3; i++ {
 		logs = append(logs, nil)
@@ -550,7 +550,7 @@ func (cfg *configDespliegue) comprobarEstadoRemoto(idNodoDeseado int,
 
 }
 
-// apaga el lider actual
+// Hace que el nodo lider pase a estado seguidor
 func (cfg *configDespliegue) quitarLider() {
 	var reply raft.Vacio
 
@@ -562,6 +562,7 @@ func (cfg *configDespliegue) quitarLider() {
 
 }
 
+// Somete una operacion al nodo
 func (cfg *configDespliegue) someterOperacion(
 	indiceNodo int, iteracion int) bool {
 	operacion := raft.TipoOperacion{"iteracion" + strconv.Itoa(iteracion), "aa", "a"}
@@ -572,6 +573,7 @@ func (cfg *configDespliegue) someterOperacion(
 	return err == nil
 }
 
+// Obtiene todas las entradas del registro de un nodo hasta la entrada n
 func (cfg *configDespliegue) obtenerRegistro(indiceNodo int, n int) []string {
 	results := []string{}
 	var reply string
@@ -584,6 +586,7 @@ func (cfg *configDespliegue) obtenerRegistro(indiceNodo int, n int) []string {
 	return results
 }
 
+// Pasa un nodo de cualquier estado a estado pausa
 func (cfg *configDespliegue) PonerPausa(
 	indiceNodo int) {
 	vacio := raft.Vacio{}
@@ -594,6 +597,7 @@ func (cfg *configDespliegue) PonerPausa(
 	return
 }
 
+// Pasa un nodo de estado pausa a estado seguidor
 func (cfg *configDespliegue) QuitarPausa(
 	indiceNodo int) {
 	vacio := raft.Vacio{}
@@ -604,6 +608,8 @@ func (cfg *configDespliegue) QuitarPausa(
 	return
 }
 
+// Obtiene el número de entradas que tiene el nodo en su registro
+// y el número de entradas comprometidas
 func (cfg *configDespliegue) obtenerCompromiso(
 	indiceNodo int) {
 	vacio := raft.Vacio{}

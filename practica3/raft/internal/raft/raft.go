@@ -1,13 +1,37 @@
-// Escribir vuestro código de funcionalidad Raft en este fichero
-//
+/*
+* Autores:
+*	Jorge Solán Morote NIA: 816259
+*	Francisco Javier Pizarro NIA:  821259
+* Fecha de última revisión:
+*	09/11/2022
+* Descripción del fichero:
+*	Archivo principal de código, este se encarga de definir
+*	el funcionamiento de un nodo raft, así
+*	como las llamadas externas RPC que se pueden realizar
+*	sobre el
+* Descripción de la estructura del código:
+*	1.Imports
+*	2.Constantes generales
+*	3.Estructuras de datos internas
+*	4.Creación nodo raft
+*	5.Funciones internas que llamadas por las RCP de API de los test
+*	6.Estructuras de datos llamadas RPC API
+*	7.Protocolos RPC llamadas API
+*	8.Estructuras de datos llamadas RPC internos
+*	9.Protocolos RPC llamada interna
+*	10.Llamadas internas para invocar RPC interno
+*	11.Flujo principal del nodo
+*	12.Funciones auxiliares nodo candidato
+*	13.Funciones auxiliares nodo lider
+*	14.Llamadas RPC para test y control externo
+*	15.Funciones auxilares generales
+ */
 
 package raft
 
 //
 // API
 // ===
-// Este es el API que vuestra implementación debe exportar
-//
 // nodoRaft = NuevoNodo(...)
 //   Crear un nuevo servidor del grupo de elección.
 //
@@ -20,7 +44,9 @@ package raft
 //
 // nodoRaft.SometerOperacion(operacion interface()) (indice, mandato, esLider)
 
-// type AplicaOperacion
+//====================================================================
+//	IMPORTS
+//====================================================================
 
 import (
 	"fmt"
@@ -35,6 +61,10 @@ import (
 	"math/rand"
 	"raft/internal/comun/rpctimeout"
 )
+
+//====================================================================
+//	CONSTANTES
+//====================================================================
 
 const errorTime = 100
 const electionTime = 3
@@ -53,6 +83,10 @@ const (
 	// Cambiar esto para salida de logs en un directorio diferente
 	kLogOutputDir = "./logs_raft/"
 )
+
+//====================================================================
+//	ESTRUCTURAS DE DATOS INTERNAS
+//====================================================================
 
 type TipoOperacion struct {
 	Operacion string // La operaciones posibles son "leer" y "escribir"
@@ -92,16 +126,20 @@ type NodoRaft struct {
 	Mux sync.Mutex // Mutex para proteger acceso a estado compartido
 
 	// Host:Port de todos los nodos (réplicas) Raft, en mismo orden
-	Nodos   []rpctimeout.HostPort
-	Yo      int // indice de este nodos en campo array "nodos"
-	IdLider int
-	Logger *log.Logger
+	Nodos        []rpctimeout.HostPort
+	Yo           int // indice de este nodos en campo array "nodos"
+	IdLider      int
+	Logger       *log.Logger
 	CurrentState State
 
 	StillAlive   chan bool
 	VoteRecivied chan bool
 	Comprommised []chan bool
 }
+
+//====================================================================
+//	CREACIÓN NODO RAFT
+//====================================================================
 
 // Creacion de un nuevo nodo de eleccion
 //
@@ -123,7 +161,7 @@ func NuevoNodo(nodos []rpctimeout.HostPort, yo int,
 	nr.Nodos = nodos
 	nr.Yo = yo
 	nr.IdLider = -1
-	nr.crearLogger(nodos,yo)
+	nr.crearLogger(nodos, yo)
 	nr.StillAlive = make(chan bool)
 	nr.VoteRecivied = make(chan bool)
 	nr.Comprommised = []chan bool{make(chan bool)}
@@ -134,6 +172,7 @@ func NuevoNodo(nodos []rpctimeout.HostPort, yo int,
 	return nr
 }
 
+//Crea el logger del nodo
 func (nr *NodoRaft) crearLogger(nodos []rpctimeout.HostPort, yo int) {
 	if kEnableDebugLogs {
 		nombreNodo := nodos[yo].Host() + "_" + nodos[yo].Port()
@@ -163,6 +202,7 @@ func (nr *NodoRaft) crearLogger(nodos []rpctimeout.HostPort, yo int) {
 	}
 }
 
+//Crea el estado inicial del nodo
 func (nr *NodoRaft) createInitialState() {
 	nr.CurrentState = State{}
 
@@ -177,9 +217,13 @@ func (nr *NodoRaft) createInitialState() {
 		nr.CurrentState.NextIndex[i] = 1
 		nr.CurrentState.MatchIndex[i] = 0
 	}
-	
+
 	nr.CurrentState.Rol = "Seguidor"
 }
+
+//====================================================================
+//	FUNCIONES INTERNAS LLAMADAS POR LAS RPC DE LA API
+//====================================================================
 
 // Metodo Para() utilizado cuando no se necesita mas al nodo
 //
@@ -203,7 +247,6 @@ func (nr *NodoRaft) obtenerEstado() (int, int, bool, int) {
 	var idLider int = nr.IdLider
 
 	nr.Logger.Printf("Estado actual %d %d %t %d", yo, mandato, esLider, idLider)
-	// Vuestro codigo aqui
 
 	return yo, mandato, esLider, idLider
 }
@@ -228,7 +271,6 @@ func (nr *NodoRaft) someterOperacion(operacion TipoOperacion) (int, int,
 	idLider := nr.IdLider
 	valorADevolver := operacion.Operacion
 
-
 	if EsLider {
 		nr.Comprommised = append(nr.Comprommised, make(chan bool))
 		nr.CurrentState.Logs = append(nr.CurrentState.Logs, Log{nr.CurrentState.CurrentTerm, operacion})
@@ -242,7 +284,33 @@ func (nr *NodoRaft) someterOperacion(operacion TipoOperacion) (int, int,
 // LLAMADAS RPC al API
 //
 // Si no tenemos argumentos o respuesta estructura vacia (tamaño cero)
+
+//====================================================================
+//	ESTRUCTURAS DE DATOS LLAMADAS RPC API
+//====================================================================
+
 type Vacio struct{}
+
+type EstadoParcial struct {
+	Mandato int
+	EsLider bool
+	IdLider int
+}
+
+type EstadoRemoto struct {
+	IdNodo int
+	EstadoParcial
+}
+
+type ResultadoRemoto struct {
+	ValorADevolver string
+	IndiceRegistro int
+	EstadoParcial
+}
+
+//====================================================================
+//	PROTOCOLOS RPC LLAMADAS API
+//====================================================================
 
 func (nr *NodoRaft) ParaNodo(args Vacio, reply *Vacio) error {
 	defer nr.para()
@@ -257,26 +325,9 @@ func (nr *NodoRaft) DejarLider(args Vacio, reply *Vacio) error {
 	return nil
 }
 
-type EstadoParcial struct {
-	Mandato int
-	EsLider bool
-	IdLider int
-}
-
-type EstadoRemoto struct {
-	IdNodo int
-	EstadoParcial
-}
-
 func (nr *NodoRaft) ObtenerEstadoNodo(args Vacio, reply *EstadoRemoto) error {
 	reply.IdNodo, reply.Mandato, reply.EsLider, reply.IdLider = nr.obtenerEstado()
 	return nil
-}
-
-type ResultadoRemoto struct {
-	ValorADevolver string
-	IndiceRegistro int
-	EstadoParcial
 }
 
 func (nr *NodoRaft) SometerOperacionRaft(operacion TipoOperacion,
@@ -290,9 +341,13 @@ func (nr *NodoRaft) SometerOperacionRaft(operacion TipoOperacion,
 // -----------------------------------------------------------------------
 // LLAMADAS RPC protocolo RAFT
 //
+
+//====================================================================
+//	ESTRUCTURAS DE DATOS RPCS INTERNOS
+//====================================================================
+
 // Structura de ejemplo de argumentos de RPC PedirVoto.
 type ArgsPeticionVoto struct {
-	// Vuestros datos aqui
 	Term         int
 	CandidateId  int
 	LastLogIndex int
@@ -301,10 +356,27 @@ type ArgsPeticionVoto struct {
 
 // Structura de ejemplo de respuesta de RPC PedirVoto,
 type RespuestaPeticionVoto struct {
-	// Vuestros datos aqui
 	Term        int
 	VoteGranted bool
 }
+
+type ArgAppendEntries struct {
+	Term         int
+	LeaderId     int
+	PrevLogIndex int
+	PrevLogTerm  int
+	Entries      []Log
+	LeaderCommit int
+}
+
+type Results struct {
+	Term   int
+	Sucess bool
+}
+
+//====================================================================
+//	PROTOCOLOS RPC LLAMADA INTERNA
+//====================================================================
 
 // Metodo para RPC PedirVoto
 func (nr *NodoRaft) PedirVoto(peticion *ArgsPeticionVoto,
@@ -330,22 +402,6 @@ func (nr *NodoRaft) PedirVoto(peticion *ArgsPeticionVoto,
 	return nil
 }
 
-type ArgAppendEntries struct {
-	// Vuestros datos aqui
-	Term         int
-	LeaderId     int
-	PrevLogIndex int
-	PrevLogTerm  int
-	Entries      []Log
-	LeaderCommit int
-}
-
-type Results struct {
-	// Vuestros datos aqui
-	Term   int
-	Sucess bool
-}
-
 // Metodo de tratamiento de llamadas RPC AppendEntries
 func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 	results *Results) error {
@@ -354,20 +410,16 @@ func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 		}
 		return nil
 	}
-
 	if len(args.Entries) == 0 {
 		nr.Logger.Println("HeartPulse recivied")
 	} else {
-
 		nr.Logger.Println("RPC AppendEntries called from other replica")
 	}
-
 	if args.Term < nr.CurrentState.CurrentTerm {
 		nr.Logger.Println("RPC error term")
 		results.Sucess = false
 		return nil
 	}
-
 	if len(nr.CurrentState.Logs) != 0 && args.PrevLogIndex > 0 &&
 		nr.CurrentState.Logs[args.PrevLogIndex-1].Term != args.PrevLogTerm { //log donesnt contait an entry
 		nr.Logger.Println("RPC error prevLog term")
@@ -375,6 +427,14 @@ func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 		return nil
 	}
 
+	nr.auxAppendEntries(args)
+	results.Sucess = true
+	return nil
+}
+
+//Actualiza los valores locales del nodo si recibe una llamada appendentries
+//correcta
+func (nr *NodoRaft) auxAppendEntries(args *ArgAppendEntries) {
 	if nr.CurrentState.Rol == "Candidato" {
 		nr.CurrentState.Rol = "Seguidor"
 	}
@@ -391,12 +451,13 @@ func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 	if args.LeaderCommit > nr.CurrentState.CommitIndex {
 		nr.CurrentState.CommitIndex = int(math.Min(float64(args.LeaderCommit), float64((len(nr.CurrentState.Logs) - 1))))
 	}
-	results.Sucess = true
 	nr.StillAlive <- true
-
 	nr.Logger.Println("RPC done")
-	return nil
 }
+
+//====================================================================
+//	LLAMADAS LOCALES PARA INVOCAR RPC INTERNO
+//====================================================================
 
 func (nr *NodoRaft) enviarPeticionVoto(nodo int, args *ArgsPeticionVoto,
 	reply *RespuestaPeticionVoto) bool {
@@ -411,6 +472,10 @@ func (nr *NodoRaft) enviarAppendEntries(nodo int, args *ArgAppendEntries,
 	err := nr.Nodos[nodo].CallTimeout("NodoRaft.AppendEntries", args, &reply, time.Millisecond*errorTime)
 	return err == nil
 }
+
+//====================================================================
+//	FLUJO PRINCIPAL DEL NODO
+//====================================================================
 
 func (nr *NodoRaft) run(canalAplicarOperacion chan AplicaOperacion) {
 	go nr.runCommonTasks(canalAplicarOperacion)
@@ -455,7 +520,7 @@ func (nr *NodoRaft) runSeguidor() {
 		case <-ticker.C:
 			//Convertirse a candidato
 			ticker.Stop()
-			if nr.getState() != "Pausa" {//bug por eso if
+			if nr.getState() != "Pausa" { //bug por eso if
 				nr.CurrentState.Rol = "Candidato"
 			}
 		}
@@ -473,7 +538,7 @@ func (nr *NodoRaft) runCandidato() {
 		go nr.lanzarPeticionesVotos()
 		for !(votes >= ((len(nr.Nodos) / 2) + 1)) && notTimeout { //proceso elección
 			select {
-			case <-nr.VoteRecivied://Sumar voto y comprobar mayoría
+			case <-nr.VoteRecivied: //Sumar voto y comprobar mayoría
 				nr.Logger.Println("Voto procesado")
 				votes += 1
 				if votes >= ((len(nr.Nodos)/2)+1) && nr.getState() != "Pausa" {
@@ -483,7 +548,7 @@ func (nr *NodoRaft) runCandidato() {
 					nr.CurrentState.Rol = "Lider"
 					nr.Mux.Unlock()
 				}
-			case <-ticker.C://Reiniciar elección
+			case <-ticker.C: //Reiniciar elección
 				notTimeout = false
 				nr.CurrentState.CurrentTerm++
 			}
@@ -514,9 +579,9 @@ func (nr *NodoRaft) runPausa() {
 	}
 }
 
-func (nr *NodoRaft) getState() string {
-	return nr.CurrentState.Rol
-}
+//====================================================================
+//	FUNCIONES AUXILIARES NODO CANDIDATO
+//====================================================================
 
 func (nr *NodoRaft) lanzarPeticionesVotos() {
 	args := ArgsPeticionVoto{
@@ -545,6 +610,10 @@ func (nr *NodoRaft) lanzarPeticionesVotos() {
 	}
 }
 
+//====================================================================
+//	FUNCIONES AUXILIARES NODO LIDER
+//====================================================================
+
 func (nr *NodoRaft) lanzarLatidos() {
 	var reply Results
 	for i := 0; i < len(nr.Nodos); i++ {
@@ -565,7 +634,7 @@ func (nr *NodoRaft) lanzarLatidos() {
 	nr.actualizarEntradasComprometidas()
 }
 
-func (nr *NodoRaft) enviarRPC (i int, args ArgAppendEntries, reply Results) {
+func (nr *NodoRaft) enviarRPC(i int, args ArgAppendEntries, reply Results) {
 	if nr.enviarAppendEntries(i, &args, &reply) {
 		if len(args.Entries) == 0 {
 			nr.Logger.Println("Latido enviado")
@@ -604,6 +673,10 @@ func (nr *NodoRaft) actualizarEntradasComprometidas() {
 	}
 }
 
+//====================================================================
+//	LLAMADAS RPC PARA TEST Y CONTROL EXTERNO
+//====================================================================
+
 func (nr *NodoRaft) ObtenerRegistro(args int,
 	reply *string) error {
 	nr.printLogs()
@@ -615,13 +688,6 @@ func (nr *NodoRaft) ObtenerRegistro(args int,
 	*reply = nr.CurrentState.Logs[args].Operacion.Operacion
 	nr.Logger.Println("Log enviado:" + nr.CurrentState.Logs[args].Operacion.Operacion)
 	return nil
-}
-
-func (nr *NodoRaft) printLogs() {
-	nr.Logger.Println("LOGS:")
-	for i := 0; i < len(nr.CurrentState.Logs); i++ {
-		nr.Logger.Println(nr.CurrentState.Logs[i].Operacion.Operacion)
-	}
 }
 
 func (nr *NodoRaft) PonerPausa(args Vacio, reply *Vacio) error {
@@ -644,4 +710,19 @@ func (nr *NodoRaft) ObtenerCompromiso(args Vacio,
 	}
 	nr.Logger.Println("Situacion de compromiso enviada")
 	return nil
+}
+
+func (nr *NodoRaft) getState() string {
+	return nr.CurrentState.Rol
+}
+
+//====================================================================
+//	FUNCIONES AXUILIARES GENERALES
+//====================================================================
+
+func (nr *NodoRaft) printLogs() {
+	nr.Logger.Println("LOGS:")
+	for i := 0; i < len(nr.CurrentState.Logs); i++ {
+		nr.Logger.Println(nr.CurrentState.Logs[i].Operacion.Operacion)
+	}
 }
