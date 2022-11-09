@@ -327,7 +327,9 @@ func (nr *NodoRaft) DejarLider(args Vacio, reply *Vacio) error {
 }
 
 func (nr *NodoRaft) ObtenerEstadoNodo(args Vacio, reply *EstadoRemoto) error {
+	nr.Logger.Println("Estado SOLICITADO")
 	reply.IdNodo, reply.Mandato, reply.EsLider, reply.IdLider = nr.obtenerEstado()
+	nr.Logger.Printf("Estado actual %d %d %t %d", reply.IdNodo, reply.Mandato, reply.EsLider, reply.IdLider)
 	return nil
 }
 
@@ -482,6 +484,8 @@ func (nr *NodoRaft) enviarAppendEntries(nodo int, args *ArgAppendEntries,
 
 func (nr *NodoRaft) run(canalAplicarOperacion chan AplicaOperacion) {
 	go nr.runCommonTasks(canalAplicarOperacion)
+	time.Sleep(7000 * time.Millisecond)//para el test1 el cual si ya se ha elegido lider
+	//falla (es para compensar el tiempo de arranque de distributed process)
 	for {
 
 		estado := nr.getState()

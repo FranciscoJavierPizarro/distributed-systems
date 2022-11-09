@@ -43,13 +43,13 @@ const (
 	// emparejada con la clave pública en authorized_keys de máquinas remotas
 
 	PRIVKEYFILE = "id_ed25519"
-	errorTime = 100//ms
-	startTime = 500//ms
+	errorTime = 40//ms
+	startTime = 7000//ms
 	compromiseTime = 2000//ms
 )
 
 // PATH de los ejecutables de modulo golang de servicio Raft
-var PATH string = filepath.Join(os.Getenv("HOME"), "Desktop", "distributed-systems", "practica3", "raft")
+var PATH string = filepath.Join(os.Getenv("HOME"), "raft")
 
 // go run cmd/srvraft/main.go 0 127.0.0.1:29001 127.0.0.1:29002 127.0.0.1:29003
 var EXECREPLICACMD string = "cd " + PATH + "; go run " + EXECREPLICA
@@ -503,7 +503,7 @@ func (cfg *configDespliegue) obtenerEstadoRemoto(
 	indiceNodo int) (int, int, bool, int) {
 	var reply raft.EstadoRemoto
 	err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.ObtenerEstadoNodo",
-		raft.Vacio{}, &reply, 10*time.Millisecond)
+		raft.Vacio{}, &reply, errorTime*time.Millisecond)
 	check.CheckError(err, "Error en llamada RPC ObtenerEstadoRemoto")
 
 	return reply.IdNodo, reply.Mandato, reply.EsLider, reply.IdLider
@@ -521,7 +521,8 @@ func (cfg *configDespliegue) startDistributedProcesses() {
 			[]string{endPoint.Host()}, cfg.cr, PRIVKEYFILE)
 
 		// dar tiempo para se establezcan las replicas
-		//time.Sleep(2000 * time.Millisecond)
+		fmt.Printf("Nodo %d arrancado\n",i)
+		// time.Sleep(startTime * time.Millisecond)
 	}
 
 	// aproximadamente 500 ms para cada arranque por ssh en portatil
@@ -618,7 +619,7 @@ func (cfg *configDespliegue) obtenerCompromiso(
 	vacio := raft.Vacio{}
 	var reply []int
 	err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.ObtenerCompromiso",
-		vacio, &reply, errorTime*time.Millisecond)
+		vacio, &reply, errorTime*2*time.Millisecond)
 	check.CheckError(err, "Error en llamada RPC ObtenerCompromiso")
 	fmt.Printf("Nlogs: %d, CommitIndex: %d\n", reply[0], reply[1])
 	return
