@@ -290,6 +290,8 @@ func (cfg *configDespliegue) AcuerdoApesarDeSeguidor(t *testing.T) {
 		cfg.someterOperacion(idLider, i)
 		fmt.Println("Operación sometida")
 	}
+	time.Sleep(3500 * time.Millisecond)
+	
 	logs := [][]string{}
 	for i := 0; i < 3; i++ {
 		logs = append(logs, nil)
@@ -309,7 +311,7 @@ func (cfg *configDespliegue) AcuerdoApesarDeSeguidor(t *testing.T) {
 	// reconectar nodo Raft previamente desconectado y comprobar varios acuerdos
 	cfg.QuitarPausa(n)
 
-	time.Sleep(1500 * time.Millisecond)
+	time.Sleep(3500 * time.Millisecond)
 	for i := 0; i < 3; i++ {
 		logs = append(logs, nil)
 		logs[i] = cfg.obtenerRegistro(i, 4)
@@ -338,7 +340,8 @@ func (cfg *configDespliegue) SinAcuerdoPorFallos(t *testing.T) {
 	// Comprometer una entrada
 	cfg.someterOperacion(idLider, 0)
 	fmt.Println("Operación sometida")
-
+	time.Sleep(3500 * time.Millisecond)
+	
 	logs := [][]string{}
 	for i := 0; i < 3; i++ {
 		logs = append(logs, nil)
@@ -377,7 +380,7 @@ func (cfg *configDespliegue) SinAcuerdoPorFallos(t *testing.T) {
 		}
 	}
 	//Comprueba la integridad de los registros
-	time.Sleep(1500 * time.Millisecond)
+	time.Sleep(3500 * time.Millisecond)
 	logs = [][]string{}
 	for i := 0; i < 3; i++ {
 		logs = append(logs, nil)
@@ -410,7 +413,8 @@ func (cfg *configDespliegue) SometerConcurrentementeOperaciones(t *testing.T) {
 	// Comprometer una entrada
 	cfg.someterOperacion(idLider, 0)
 	fmt.Println("Operación sometida")
-
+	time.Sleep(3500 * time.Millisecond)
+	
 	logs := [][]string{}
 	for i := 0; i < 3; i++ {
 		logs = append(logs, nil)
@@ -457,6 +461,8 @@ func (cfg *configDespliegue) SometerConcurrentementeOperaciones(t *testing.T) {
 			}
 		}
 	}
+	time.Sleep(3500 * time.Millisecond)
+	
 	//Comprueba la integridad de los logs
 	logs = [][]string{}
 	for i := 0; i < 3; i++ {
