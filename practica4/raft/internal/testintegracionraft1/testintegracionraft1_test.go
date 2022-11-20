@@ -591,7 +591,7 @@ func (cfg *configDespliegue) quitarLider() {
 // Somete una operacion al nodo
 func (cfg *configDespliegue) someterOperacion(
 	indiceNodo int, iteracion int) bool {
-	operacion := raft.TipoOperacion{"lectura", "iteracion" + strconv.Itoa(iteracion), "a"}
+	operacion := raft.TipoOperacion{"escritura", "iteracion" + strconv.Itoa(iteracion), strconv.Itoa(iteracion)}
 	var reply raft.ResultadoRemoto
 	err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.SometerOperacionRaft",
 		operacion, &reply, compromiseTime*time.Millisecond)

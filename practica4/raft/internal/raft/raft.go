@@ -524,7 +524,12 @@ func (nr *NodoRaft) runStateMachine(canalAplicarOperacion chan AplicaOperacion) 
 	for {
 		tipoop := <- canalAplicarOperacion
 		op := tipoop.Operacion
-		nr.Logger.Println("Operación aplicada a la máquina de estados", op.Clave)
+		if(op.Operacion == "lectura") {
+			nr.Logger.Println("Operacion de lectura del valor: ",nr.Mapa[op.Clave])
+		} else if(op.Operacion == "escritura") {
+			nr.Mapa[op.Clave] = op.Valor
+			nr.Logger.Println("Operación de escritura con clave: ", op.Clave, " del valor: ", op.Valor)
+		}
 	}
 }
 
@@ -747,6 +752,6 @@ func (nr *NodoRaft) getState() string {
 func (nr *NodoRaft) printLogs() {
 	nr.Logger.Println("LOGS:")
 	for i := 0; i < len(nr.CurrentState.Logs); i++ {
-		nr.Logger.Println(nr.CurrentState.Logs[i].Operacion.Operacion)
+		nr.Logger.Println(nr.CurrentState.Logs[i].Operacion.Clave)
 	}
 }
