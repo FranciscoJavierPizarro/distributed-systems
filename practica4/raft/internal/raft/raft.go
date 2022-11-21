@@ -135,7 +135,7 @@ type NodoRaft struct {
 
 	StillAlive   chan bool
 	VoteRecivied chan bool
-	Comprommised []chan bool
+	Comprommised []chan string
 
 	Mapa 		 map[string]string
 }
@@ -167,7 +167,7 @@ func NuevoNodo(nodos []rpctimeout.HostPort, yo int,
 	nr.crearLogger(nodos, yo)
 	nr.StillAlive = make(chan bool)
 	nr.VoteRecivied = make(chan bool)
-	nr.Comprommised = []chan bool{make(chan bool)}
+	nr.Comprommised = []chan string{make(chan string)}
 	nr.Mapa = make(map[string]string)
 	nr.createInitialState()
 
@@ -276,9 +276,9 @@ func (nr *NodoRaft) someterOperacion(operacion TipoOperacion) (int, int,
 	valorADevolver := operacion.Operacion
 
 	if EsLider {
-		nr.Comprommised = append(nr.Comprommised, make(chan bool))
+		nr.Comprommised = append(nr.Comprommised, make(chan string))
 		nr.CurrentState.Logs = append(nr.CurrentState.Logs, Log{nr.CurrentState.CurrentTerm, operacion})
-		<-nr.Comprommised[indice-1]
+		valorADevolver =<-nr.Comprommised[indice-1]
 	}
 
 	return indice, mandato, EsLider, idLider, valorADevolver
@@ -397,11 +397,14 @@ func (nr *NodoRaft) PedirVoto(peticion *ArgsPeticionVoto,
 	nr.Logger.Println("RPC PedirVoto called from other replica")
 
 	reply.Term = nr.CurrentState.CurrentTerm
-	if peticion.Term < nr.CurrentState.CurrentTerm {
+	if peticion.Term <= nr.CurrentState.CurrentTerm {//  el = es porque al iniciar
+		//la elección cada candidato suma + 1 luego si nuestros term son iguales =>
+		//estaba un mandato atrasado
 		reply.VoteGranted = false
 	} else if (nr.CurrentState.VotedFor == -1 ||
 		peticion.CandidateId == nr.CurrentState.VotedFor) &&
-		(peticion.LastLogIndex >= nr.CurrentState.CommitIndex) {
+		(peticion.LastLogIndex >= nr.CurrentState.CommitIndex) &&
+		(peticion.LastLogIndex >= len(nr.CurrentState.Logs)-1) {
 		reply.VoteGranted = true
 		nr.CurrentState.VotedFor = peticion.CandidateId
 		nr.StillAlive <- true
@@ -526,9 +529,11 @@ func (nr *NodoRaft) runStateMachine(canalAplicarOperacion chan AplicaOperacion) 
 		op := tipoop.Operacion
 		if(op.Operacion == "lectura") {
 			nr.Logger.Println("Operacion de lectura del valor: ",nr.Mapa[op.Clave])
+			nr.Comprommised[tipoop.Indice] <- nr.Mapa[op.Clave]
 		} else if(op.Operacion == "escritura") {
 			nr.Mapa[op.Clave] = op.Valor
 			nr.Logger.Println("Operación de escritura con clave: ", op.Clave, " del valor: ", op.Valor)
+			nr.Comprommised[tipoop.Indice] <- op.Valor
 		}
 	}
 }
@@ -624,7 +629,7 @@ func (nr *NodoRaft) lanzarPeticionesVotos() {
 			go func(i int, args ArgsPeticionVoto, reply RespuestaPeticionVoto) {
 				if nr.enviarPeticionVoto(i, &args, &reply) {
 					nr.Logger.Println("Voto solicitado")
-					if reply.VoteGranted {
+					if reply.VoteGranted && reply.Term == nr.CurrentState.CurrentTerm {
 						nr.Logger.Println("Voto recibido")
 						nr.VoteRecivied <- true
 					} else {
@@ -692,9 +697,9 @@ func (nr *NodoRaft) actualizarEntradasComprometidas() {
 		}
 	}
 	if contador >= ((len(nr.Nodos) / 2) + 1) {
-		for i := nr.CurrentState.CommitIndex; i < len(nr.CurrentState.Logs); i++ {
-			nr.Comprommised[i] <- true
-		}
+		// for i := nr.CurrentState.CommitIndex; i < len(nr.CurrentState.Logs); i++ {
+		// 	nr.Comprommised[i] <- true
+		// }
 
 		nr.CurrentState.CommitIndex = len(nr.CurrentState.Logs)
 		nr.Logger.Printf("Comprometido hasta log %d\n", nr.CurrentState.CommitIndex)

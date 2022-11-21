@@ -595,6 +595,7 @@ func (cfg *configDespliegue) someterOperacion(
 	var reply raft.ResultadoRemoto
 	err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.SometerOperacionRaft",
 		operacion, &reply, compromiseTime*time.Millisecond)
+	fmt.Println("Valor " + reply.ValorADevolver + " escrito.")
 	// check.CheckError(err, "Error en llamada RPC SometerOperacion")
 	return err == nil
 }
