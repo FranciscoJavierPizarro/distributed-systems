@@ -426,8 +426,8 @@ func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 	} else {
 		nr.Logger.Println("RPC AppendEntries called from other replica")
 	}
-	if args.Term < nr.CurrentState.CurrentTerm {
-		nr.Logger.Println("RPC error term")
+	if args.Term < nr.CurrentState.CurrentTerm || (args.PrevLogIndex < len(nr.CurrentState.Logs)-1){
+		nr.Logger.Println("RPC error term or error prevlogindex(lider no adecuado)")
 		results.Sucess = false
 		return nil
 	}
@@ -451,7 +451,9 @@ func (nr *NodoRaft) auxAppendEntries(args *ArgAppendEntries) {
 	}
 	nr.IdLider = args.LeaderId
 	nr.CurrentState.VotedFor = -1
-
+	if(args.PrevLogIndex != 0) {
+		nr.CurrentState.Logs = nr.CurrentState.Logs[:args.PrevLogIndex]
+	}
 	for i := 0; i < len(args.Entries); i++ {
 		nr.CurrentState.Logs = append(nr.CurrentState.Logs, args.Entries[i])
 		//nr.Logger.Println(args.Entries[i].Operacion)
