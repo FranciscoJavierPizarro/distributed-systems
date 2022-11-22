@@ -93,11 +93,19 @@ func TestPrimerasPruebas(t *testing.T) { // (m *testing.M) {
 	t.Run("T5:AcuerdoAPesarDeDesconexionesDeSeguidor ",
 		func(t *testing.T) { cfg.AcuerdoApesarDeSeguidor(t) })
 
-	t.Run("T5:SinAcuerdoPorFallos ",
+	t.Run("T6:SinAcuerdoPorFallos ",
 		func(t *testing.T) { cfg.SinAcuerdoPorFallos(t) })
 
-	t.Run("T5:SometerConcurrentementeOperaciones ",
+	t.Run("T7:SometerConcurrentementeOperaciones ",
 		func(t *testing.T) { cfg.SometerConcurrentementeOperaciones(t) })
+
+
+	//TEST ADICIONALES
+	t.Run("T8:Correcto funcionamiento maquina de estados",
+		func(t *testing.T) { cfg.ComprobarMaquinaEstados(t) })
+	
+	t.Run("T9:Correcta elección del lider mas apto ",
+	func(t *testing.T) { cfg.LiderMasApto(t) })
 }
 
 // // TEST primer rango
@@ -483,6 +491,73 @@ func (cfg *configDespliegue) SometerConcurrentementeOperaciones(t *testing.T) {
 	fmt.Println(".............", t.Name(), "Superado")
 }
 
+
+func (cfg *configDespliegue) ComprobarMaquinaEstados(t *testing.T) {
+
+	fmt.Println(t.Name(), ".....................")
+	cfg.startDistributedProcesses()
+	fmt.Printf("Comprobando correcto funcionamiento de la máquina de estados\n")
+	time.Sleep(300 * time.Millisecond)
+	cfg.pruebaUnLider(3)
+	_, _, _, idLider := cfg.obtenerEstadoRemoto(0)
+	fmt.Printf("Lider:%d\n", idLider)
+	fmt.Println("Sometiendo escrituras")
+	for i := 0; i < 3; i++ {
+		cfg.someterOperacion(idLider, i)
+		fmt.Println("Escritura sometida")
+	}
+	time.Sleep(1000 * time.Millisecond)
+	fmt.Println("Sometiendo lecturas")
+	for i := 0; i < 3; i++ {
+		cfg.someterLectura(idLider, i)
+		fmt.Println("Lectura sometida")
+	}
+
+	// Parar réplicas almacenamiento en remoto
+	cfg.stopDistributedProcesses() //parametros
+	fmt.Println(".............", t.Name(), "Superado")
+}
+
+func (cfg *configDespliegue) LiderMasApto(t *testing.T) {
+
+	fmt.Println(t.Name(), ".....................")
+	cfg.startDistributedProcesses()
+	fmt.Printf("Comprobando correcta elección del lider mas apto\n")
+	time.Sleep(300 * time.Millisecond)
+	cfg.pruebaUnLider(3)
+	_, _, _, idLider := cfg.obtenerEstadoRemoto(0)
+	fmt.Printf("Lider:%d\n", idLider)
+
+	cfg.someterOperacion(idLider, 0)
+	fmt.Println("Operación sometida")
+
+	//  Obtener un lider y, a continuación desconectar una de los nodos Raft
+	n := 0
+	for n == idLider {
+		n = rand.Intn(len(cfg.nodosRaft) - 1)
+	}
+	cfg.PonerPausa(n) //Desconectamos un nodo que va a ser el lider no apto despues
+	time.Sleep(1000 * time.Millisecond)
+	for i := 1; i < 3; i++ {
+		cfg.someterOperacion(idLider, i)
+		fmt.Println("Operación sometida")
+	}
+	fmt.Println("Quitamos al lider y reactivamos el nodo no apto como candidato")
+	cfg.quitarLider()
+	time.Sleep(100 * time.Millisecond)
+	cfg.ForzarCandidato(n)//Forzamos que el nodo no apto para lider pase de pausa a modo candidato
+	time.Sleep(3000 * time.Millisecond) // esperamos dado que no va a ser elegido y 
+	//otro nodo debe ser candidato y pasar a lider
+	_, _, _, idLider = cfg.obtenerEstadoRemoto(idLider)
+	if(idLider == n || idLider == -1) {
+		cfg.t.Fatalf("ERROR se ha elegido un lider no apto que no tenía las entradas necesarias\n")
+	}
+	fmt.Println("El nodo no apto NO ha sido elegido => La elección funciona correctamente")
+	// Parar réplicas almacenamiento en remoto
+	cfg.stopDistributedProcesses() //parametros
+	fmt.Println(".............", t.Name(), "Superado")
+}
+
 // --------------------------------------------------------------------------
 // FUNCIONES DE APOYO
 // Comprobar que hay un solo lider
@@ -600,6 +675,21 @@ func (cfg *configDespliegue) someterOperacion(
 	return err == nil
 }
 
+// Somete una operacion de lectura y coteja el resultado obtenido y el esperado
+func (cfg *configDespliegue) someterLectura(
+	indiceNodo int, iteracion int) bool {
+	operacion := raft.TipoOperacion{"lectura", "iteracion" + strconv.Itoa(iteracion),""}
+	var reply raft.ResultadoRemoto
+	err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.SometerOperacionRaft",
+		operacion, &reply, compromiseTime*time.Millisecond)
+	if(reply.ValorADevolver != strconv.Itoa(iteracion)) {
+		cfg.t.Fatalf("ERROR lectura de un valor que no corresponde con el esperado\n")
+	}
+	fmt.Println("Valor " + reply.ValorADevolver + " leído correctamente.")
+	// check.CheckError(err, "Error en llamada RPC SometerOperacion")
+	return err == nil
+}
+
 // Obtiene todas las entradas del registro de un nodo hasta la entrada n
 func (cfg *configDespliegue) obtenerRegistro(indiceNodo int, n int) []string {
 	results := []string{}
@@ -632,6 +722,17 @@ func (cfg *configDespliegue) QuitarPausa(
 	err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.QuitarPausa",
 		vacio, &reply, errorTime*time.Millisecond)
 	check.CheckError(err, "Error en llamada RPC QuitarPausa")
+	return
+}
+
+// Pasa un nodo de estado seguidor a estado candidato
+func (cfg *configDespliegue) ForzarCandidato(
+	indiceNodo int) {
+	vacio := raft.Vacio{}
+	var reply raft.Vacio
+	err := cfg.nodosRaft[indiceNodo].CallTimeout("NodoRaft.ForzarCandidato",
+		vacio, &reply, errorTime*time.Millisecond)
+	check.CheckError(err, "Error en llamada RPC ForzarCandidato")
 	return
 }
 

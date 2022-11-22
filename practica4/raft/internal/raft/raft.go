@@ -325,7 +325,7 @@ func (nr *NodoRaft) DejarLider(args Vacio, reply *Vacio) error {
 	nr.IdLider = -1
 	nr.CurrentState.VotedFor = -1
 	nr.CurrentState.Rol = "Seguidor"
-
+	nr.Logger.Println("FORZADO a pasar a modo seguidor")
 	return nil
 }
 
@@ -387,7 +387,6 @@ type Results struct {
 // Metodo para RPC PedirVoto
 func (nr *NodoRaft) PedirVoto(peticion *ArgsPeticionVoto,
 	reply *RespuestaPeticionVoto) error {
-	// Vuestro codigo aqui
 	if nr.getState() == "Pausa" {
 		for nr.getState() == "Pausa" {
 			time.Sleep(heartTime * time.Millisecond)
@@ -400,15 +399,17 @@ func (nr *NodoRaft) PedirVoto(peticion *ArgsPeticionVoto,
 	if peticion.Term <= nr.CurrentState.CurrentTerm {//  el = es porque al iniciar
 		//la elección cada candidato suma + 1 luego si nuestros term son iguales =>
 		//estaba un mandato atrasado
+		nr.Logger.Printf("Voto no garantizado %d %d\n",peticion.Term, nr.CurrentState.CurrentTerm)
 		reply.VoteGranted = false
 	} else if (nr.CurrentState.VotedFor == -1 ||
 		peticion.CandidateId == nr.CurrentState.VotedFor) &&
-		(peticion.LastLogIndex >= nr.CurrentState.CommitIndex) &&
-		(peticion.LastLogIndex >= len(nr.CurrentState.Logs)-1) {
+		(peticion.LastLogIndex >= nr.CurrentState.CommitIndex) {
 		reply.VoteGranted = true
 		nr.CurrentState.VotedFor = peticion.CandidateId
 		nr.StillAlive <- true
+		nr.Logger.Println("Voto garantizado")
 	}
+
 	return nil
 }
 
@@ -426,8 +427,9 @@ func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 	} else {
 		nr.Logger.Println("RPC AppendEntries called from other replica")
 	}
-	if args.Term < nr.CurrentState.CurrentTerm || (args.PrevLogIndex < len(nr.CurrentState.Logs)-1){
-		nr.Logger.Println("RPC error term or error prevlogindex(lider no adecuado)")
+
+	if args.Term < nr.CurrentState.CurrentTerm{
+		nr.Logger.Println("RPC error term")
 		results.Sucess = false
 		return nil
 	}
@@ -448,6 +450,7 @@ func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 func (nr *NodoRaft) auxAppendEntries(args *ArgAppendEntries) {
 	if nr.CurrentState.Rol == "Candidato" {
 		nr.CurrentState.Rol = "Seguidor"
+		nr.CurrentState.CurrentTerm = args.Term
 	}
 	nr.IdLider = args.LeaderId
 	nr.CurrentState.VotedFor = -1
@@ -459,10 +462,10 @@ func (nr *NodoRaft) auxAppendEntries(args *ArgAppendEntries) {
 		//nr.Logger.Println(args.Entries[i].Operacion)
 	}
 	if len(args.Entries) > 0 {
-		nr.CurrentState.CurrentTerm = args.Entries[len(args.Entries)-1].Term
+		nr.CurrentState.CurrentTerm = args.Term
 	}
 	if args.LeaderCommit > nr.CurrentState.CommitIndex {
-		nr.CurrentState.CommitIndex = int(math.Min(float64(args.LeaderCommit), float64((len(nr.CurrentState.Logs) - 1))))
+		nr.CurrentState.CommitIndex = int(math.Min(float64(args.LeaderCommit), float64((len(nr.CurrentState.Logs)))))
 	}
 	nr.StillAlive <- true
 	nr.Logger.Println("RPC done")
@@ -568,9 +571,9 @@ func (nr *NodoRaft) runCandidato() {
 	nr.CurrentState.VotedFor = nr.Yo
 	for nr.getState() == "Candidato" {
 		votes := 1 //se vota a si mismo
-		notTimeout := true
+		timeout := false
 		go nr.lanzarPeticionesVotos()
-		for !(votes >= ((len(nr.Nodos) / 2) + 1)) && notTimeout { //proceso elección
+		for !(votes >= ((len(nr.Nodos) / 2) + 1)) && !timeout { //proceso elección
 			select {
 			case <-nr.VoteRecivied: //Sumar voto y comprobar mayoría
 				nr.Logger.Println("Voto procesado")
@@ -583,8 +586,10 @@ func (nr *NodoRaft) runCandidato() {
 					nr.Mux.Unlock()
 				}
 			case <-ticker.C: //Reiniciar elección
-				notTimeout = false
-				nr.CurrentState.CurrentTerm++
+				timeout = true
+				if(nr.CurrentState.Rol == "Candidato") {
+					nr.CurrentState.CurrentTerm++
+				}
 			}
 		}
 	}
@@ -593,15 +598,15 @@ func (nr *NodoRaft) runCandidato() {
 func (nr *NodoRaft) runLider() {
 	nr.Logger.Println("Now i am a leader")
 	nr.lanzarLatidos()
-	// s1 := rand.NewSource(time.Now().UnixNano())
-	// r1 := rand.New(s1)
 	heartPulse := time.Millisecond * time.Duration(heartTime)
 	ticker := time.NewTicker(heartPulse)
 
 	for nr.getState() == "Lider" {
 		select {
 		case <-ticker.C:
-			nr.lanzarLatidos() //Enviar latidos/append
+			if(nr.getState() == "Lider") {
+				nr.lanzarLatidos() //Enviar latidos/append
+			}
 		}
 	}
 	ticker.Stop()
@@ -610,7 +615,7 @@ func (nr *NodoRaft) runLider() {
 func (nr *NodoRaft) runPausa() {
 	nr.Logger.Println("Now i am in pause")
 	for nr.getState() == "Pausa" {
-		time.Sleep(heartTime * time.Millisecond)
+		time.Sleep(heartTime/2 * time.Millisecond)
 	}
 }
 
@@ -631,10 +636,10 @@ func (nr *NodoRaft) lanzarPeticionesVotos() {
 			go func(i int, args ArgsPeticionVoto, reply RespuestaPeticionVoto) {
 				if nr.enviarPeticionVoto(i, &args, &reply) {
 					nr.Logger.Println("Voto solicitado")
-					if reply.VoteGranted && reply.Term == nr.CurrentState.CurrentTerm {
+					if reply.VoteGranted {
 						nr.Logger.Println("Voto recibido")
 						nr.VoteRecivied <- true
-					} else {
+					} else if(nr.CurrentState.CurrentTerm < reply.Term) {
 						nr.CurrentState.CurrentTerm = reply.Term
 					}
 				} else {
@@ -663,14 +668,16 @@ func (nr *NodoRaft) lanzarLatidos() {
 				args.PrevLogIndex = nr.CurrentState.MatchIndex[i]
 				args.PrevLogTerm = nr.CurrentState.Logs[args.PrevLogIndex].Term
 			}
-			go nr.enviarRPC(i, args, reply)
+			if(nr.CurrentState.Rol == "Lider") {
+				go nr.enviarRPC(i, args, reply)
+			}
 		}
 	}
 	nr.actualizarEntradasComprometidas()
 }
 
 func (nr *NodoRaft) enviarRPC(i int, args ArgAppendEntries, reply Results) {
-	if nr.enviarAppendEntries(i, &args, &reply) {
+	if nr.CurrentState.Rol == "Lider" && nr.enviarAppendEntries(i, &args, &reply) {
 		if len(args.Entries) == 0 {
 			nr.Logger.Println("Latido enviado")
 		} else {
@@ -699,10 +706,6 @@ func (nr *NodoRaft) actualizarEntradasComprometidas() {
 		}
 	}
 	if contador >= ((len(nr.Nodos) / 2) + 1) {
-		// for i := nr.CurrentState.CommitIndex; i < len(nr.CurrentState.Logs); i++ {
-		// 	nr.Comprommised[i] <- true
-		// }
-
 		nr.CurrentState.CommitIndex = len(nr.CurrentState.Logs)
 		nr.Logger.Printf("Comprometido hasta log %d\n", nr.CurrentState.CommitIndex)
 	}
@@ -735,6 +738,12 @@ func (nr *NodoRaft) PonerPausa(args Vacio, reply *Vacio) error {
 func (nr *NodoRaft) QuitarPausa(args Vacio, reply *Vacio) error {
 	nr.Logger.Println("CONTINUE")
 	nr.CurrentState.Rol = "Seguidor"
+	return nil
+}
+
+func (nr *NodoRaft) ForzarCandidato(args Vacio, reply *Vacio) error {
+	nr.Logger.Println("Paso forzoso a modo candidato")
+	nr.CurrentState.Rol = "Candidato"
 	return nil
 }
 
