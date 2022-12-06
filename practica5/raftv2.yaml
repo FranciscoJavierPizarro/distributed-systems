@@ -71,7 +71,7 @@ spec:
   restartPolicy: Never
   containers:
   - name: rep
-    image: localhost:5001/cliente:latest
+    image: localhost:5001/clienttest:latest
     command:
     - sleep
     - "3600"
