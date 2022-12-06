@@ -11,12 +11,12 @@ import (
 	"raft/internal/comun/rpctimeout"
 	"raft/internal/raft"
 	"strconv"
-	"time"
+	// "time"
 )
 
 func main() {
 	// obtener entero de indice de este nodo
-	time.Sleep(500 * time.Millisecond)
+	
 	me, err := strconv.Atoi(string(os.Args[1][len(os.Args[1]) - 1]))
 	check.CheckError(err, "Main, mal numero entero de indice de nodo:")
 

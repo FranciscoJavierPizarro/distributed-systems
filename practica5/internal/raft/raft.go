@@ -170,7 +170,7 @@ func NuevoNodo(nodos []rpctimeout.HostPort, yo int,
 	nr.Comprommised = []chan string{make(chan string)}
 	nr.Mapa = make(map[string]string)
 	nr.createInitialState()
-
+	time.Sleep(500 * time.Millisecond)
 	go nr.run(canalAplicarOperacion)
 
 	return nr
@@ -393,7 +393,7 @@ func (nr *NodoRaft) PedirVoto(peticion *ArgsPeticionVoto,
 		}
 		return nil
 	}
-	nr.Logger.Println("RPC PedirVoto called from other replica")
+	nr.Logger.Println("RPC PedirVoto called from other replica" , nr.CurrentState.VotedFor, " ", peticion.CandidateId)
 
 	reply.Term = nr.CurrentState.CurrentTerm
 	if peticion.Term <= nr.CurrentState.CurrentTerm {//  el = es porque al iniciar
@@ -407,7 +407,7 @@ func (nr *NodoRaft) PedirVoto(peticion *ArgsPeticionVoto,
 		reply.VoteGranted = true
 		nr.CurrentState.VotedFor = peticion.CandidateId
 		nr.StillAlive <- true
-		nr.Logger.Println("Voto garantizado")
+		nr.Logger.Println("Voto garantizado ")
 	}
 
 	return nil
@@ -423,7 +423,7 @@ func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 		return nil
 	}
 	if len(args.Entries) == 0 {
-		nr.Logger.Println("HeartPulse recivied")
+		//nr.Logger.Println("HeartPulse recivied")
 	} else {
 		nr.Logger.Println("RPC AppendEntries called from other replica")
 	}
@@ -453,7 +453,7 @@ func (nr *NodoRaft) auxAppendEntries(args *ArgAppendEntries) {
 		nr.CurrentState.CurrentTerm = args.Term
 	}
 	nr.IdLider = args.LeaderId
-	nr.CurrentState.VotedFor = -1
+	nr.CurrentState.VotedFor = args.LeaderId
 	if(args.PrevLogIndex != 0) {
 		nr.CurrentState.Logs = nr.CurrentState.Logs[:args.PrevLogIndex]
 	}
@@ -468,7 +468,7 @@ func (nr *NodoRaft) auxAppendEntries(args *ArgAppendEntries) {
 		nr.CurrentState.CommitIndex = int(math.Min(float64(args.LeaderCommit), float64((len(nr.CurrentState.Logs)))))
 	}
 	nr.StillAlive <- true
-	nr.Logger.Println("RPC done")
+	//nr.Logger.Println("RPC done")
 }
 
 //====================================================================
@@ -679,7 +679,7 @@ func (nr *NodoRaft) lanzarLatidos() {
 func (nr *NodoRaft) enviarRPC(i int, args ArgAppendEntries, reply Results) {
 	if nr.CurrentState.Rol == "Lider" && nr.enviarAppendEntries(i, &args, &reply) {
 		if len(args.Entries) == 0 {
-			nr.Logger.Println("Latido enviado")
+			//nr.Logger.Println("Latido enviado")
 		} else {
 			nr.Logger.Println("Append enviado")
 
@@ -699,7 +699,7 @@ func (nr *NodoRaft) enviarRPC(i int, args ArgAppendEntries, reply Results) {
 		}
 	} else {
 		if len(args.Entries) == 0 {
-			nr.Logger.Println("Latido fallido")
+			//nr.Logger.Println("Latido fallido")
 		} else {
 			nr.Logger.Println("RPC fallido")
 		}
@@ -715,7 +715,7 @@ func (nr *NodoRaft) actualizarEntradasComprometidas() {
 	}
 	if contador >= ((len(nr.Nodos) / 2) + 1) {
 		nr.CurrentState.CommitIndex = len(nr.CurrentState.Logs)
-		nr.Logger.Printf("Comprometido hasta log %d\n", nr.CurrentState.CommitIndex)
+		//nr.Logger.Printf("Comprometido hasta log %d\n", nr.CurrentState.CommitIndex)
 	}
 }
 
