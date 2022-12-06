@@ -688,6 +688,14 @@ func (nr *NodoRaft) enviarRPC(i int, args ArgAppendEntries, reply Results) {
 				nr.CurrentState.NextIndex[i] += len(args.Entries)
 				nr.Logger.Println("Append correcto")
 			}
+			////////////////////////////
+			////////////////////////////
+			////////////////////////////
+			//IMPORTANTE FALTA UN ELSE//
+			//MUY IMPORTANTE EL ELSE:)//
+			////////////////////////////
+			////////////////////////////
+			////////////////////////////
 		}
 	} else {
 		if len(args.Entries) == 0 {
