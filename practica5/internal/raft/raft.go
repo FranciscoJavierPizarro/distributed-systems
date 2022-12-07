@@ -274,7 +274,7 @@ func (nr *NodoRaft) someterOperacion(operacion TipoOperacion) (int, int,
 	EsLider := nr.IdLider == nr.Yo
 	idLider := nr.IdLider
 	valorADevolver := operacion.Operacion
-
+	
 	if EsLider {
 		nr.Comprommised = append(nr.Comprommised, make(chan string))
 		nr.CurrentState.Logs = append(nr.CurrentState.Logs, Log{nr.CurrentState.CurrentTerm, operacion})
@@ -527,6 +527,7 @@ func (nr *NodoRaft) runCommonTasks(canalAplicarOperacion chan AplicaOperacion) {
 				nr.CurrentState.Logs[nr.CurrentState.LastApplied].Operacion,
 			}
 			canalAplicarOperacion <- op
+			nr.Logger.Printf("Operacion aplicada %d %s", nr.CurrentState.LastApplied,nr.CurrentState.Logs[nr.CurrentState.LastApplied].Operacion)
 			nr.CurrentState.LastApplied += 1
 		}
 	}
@@ -536,10 +537,11 @@ func (nr *NodoRaft) runStateMachine(canalAplicarOperacion chan AplicaOperacion) 
 	for {
 		tipoop := <- canalAplicarOperacion
 		op := tipoop.Operacion
-		if(op.Operacion == "lectura") {
+		nr.Logger.Println("Operacion leida de aplicaroper")
+		if (op.Operacion == "lectura") {
 			nr.Logger.Println("Operacion de lectura del valor: ",nr.Mapa[op.Clave])
 			nr.Comprommised[tipoop.Indice] <- nr.Mapa[op.Clave]
-		} else if(op.Operacion == "escritura") {
+		} else if (op.Operacion == "escritura") {
 			nr.Mapa[op.Clave] = op.Valor
 			nr.Logger.Println("Operación de escritura con clave: ", op.Clave, " del valor: ", op.Valor)
 			nr.Comprommised[tipoop.Indice] <- op.Valor
@@ -603,6 +605,7 @@ func (nr *NodoRaft) runCandidato() {
 
 func (nr *NodoRaft) runLider() {
 	nr.Logger.Println("Now i am a leader")
+	nr.Comprommised = make([]chan string, len(nr.CurrentState.Logs))
 	for i := 0; i < len(nr.Nodos); i++ {
 		if(i != nr.Yo) {
 			nr.CurrentState.NextIndex[i] = len(nr.CurrentState.Logs) + 1
@@ -682,7 +685,9 @@ func (nr *NodoRaft) lanzarLatidos() {
 			if nr.CurrentState.NextIndex[i] <= len(nr.CurrentState.Logs) {
 				args.Entries = nr.CurrentState.Logs[nr.CurrentState.MatchIndex[i]:len(nr.CurrentState.Logs)]
 				args.PrevLogIndex = nr.CurrentState.MatchIndex[i]
-				args.PrevLogTerm = nr.CurrentState.Logs[args.PrevLogIndex].Term
+				if (args.PrevLogIndex > 0) {
+					args.PrevLogTerm = nr.CurrentState.Logs[args.PrevLogIndex - 1].Term
+				}
 			}
 			if(nr.CurrentState.Rol == "Lider") {
 				go nr.enviarRPC(i, args, reply,done)
@@ -706,7 +711,7 @@ func (nr *NodoRaft) enviarRPC(i int, args ArgAppendEntries, reply Results, done 
 				nr.CurrentState.MatchIndex[i] += len(args.Entries)
 				nr.CurrentState.NextIndex[i] += len(args.Entries)
 				nr.Logger.Println("Append correcto")
-			} else {
+			} else if (nr.CurrentState.MatchIndex[i] > 0) {
 				nr.CurrentState.MatchIndex[i]--
 				nr.CurrentState.NextIndex[i]--
 				nr.Logger.Println("Append incorrecto retrocedemos")

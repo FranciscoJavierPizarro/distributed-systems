@@ -91,6 +91,7 @@ func main() {
 	var nlec int = 0
 	var nodo int = 0
 	nOp := 0
+	nL:=0
 	fmt.Println("Cliente interactivo con nodos raft")
 	for (option != 0) {
 		fmt.Println("Opciones disponibles: \n\t1 Someter operación de escritura\n\t2 Someter operación de lectura\n\t3 Obtener registro(logs)\n\t4 Obtener nivel de compromiso\n")
@@ -101,7 +102,7 @@ func main() {
 			break
 		case 1:
 			_, _, _, idLider := obtenerEstadoRemoto(0,nodos)
-			someterOperacion(idLider,nOp,nodos)
+			someterOperacion(idLider,nOp+nL,nodos)
 			nOp++
 		case 2:
 			fmt.Println("Introduzca el número de escritura que quiere comprobar")
@@ -109,11 +110,12 @@ func main() {
 			fmt.Println("")
 			_, _, _, idLider := obtenerEstadoRemoto(0,nodos)
 			someterLectura(idLider,nlec,nodos)
+			nL++
 		case 3:
 			fmt.Println("Introduzca el número del nodo cuyo registro quiere visualizar")
 			fmt.Scan(&nodo)
 			fmt.Println("")
-			obtenerRegistro(nodo,nOp,nodos)
+			obtenerRegistro(nodo,nOp+nL,nodos)
 		case 4:
 			fmt.Println("Niveles de compromiso")
 			for i:=0;i<3;i++ {
