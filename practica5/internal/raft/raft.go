@@ -429,7 +429,7 @@ func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 	}
 
 	if args.Term < nr.CurrentState.CurrentTerm{
-		nr.Logger.Println("RPC error term")
+		nr.Logger.Println("RPC error term", args.Term, nr.CurrentState.CurrentTerm)
 		results.Sucess = false
 		return nil
 	}
@@ -439,7 +439,11 @@ func (nr *NodoRaft) AppendEntries(args *ArgAppendEntries,
 		results.Sucess = false
 		return nil
 	}
-
+	if  args.PrevLogIndex > len(nr.CurrentState.Logs) { //log donesnt contait an entry
+		nr.Logger.Println("RPC error el lider cree que esta replica tiene mas avanzados los LOGS")
+		results.Sucess = false
+		return nil
+	}
 	nr.auxAppendEntries(args)
 	results.Sucess = true
 	return nil
@@ -567,6 +571,7 @@ func (nr *NodoRaft) runSeguidor() {
 func (nr *NodoRaft) runCandidato() {
 	nr.Logger.Println("Now i am a candidate")
 	nr.CurrentState.CurrentTerm++
+	tempTerm := nr.CurrentState.CurrentTerm
 	ticker := time.NewTicker(time.Millisecond * reelectionTime)
 	nr.CurrentState.VotedFor = nr.Yo
 	for nr.getState() == "Candidato" {
@@ -583,12 +588,13 @@ func (nr *NodoRaft) runCandidato() {
 					nr.Mux.Lock()
 					nr.IdLider = nr.Yo
 					nr.CurrentState.Rol = "Lider"
+					nr.CurrentState.CurrentTerm = tempTerm
 					nr.Mux.Unlock()
 				}
 			case <-ticker.C: //Reiniciar elección
 				timeout = true
 				if(nr.CurrentState.Rol == "Candidato") {
-					nr.CurrentState.CurrentTerm++
+					tempTerm++
 				}
 			}
 		}
@@ -597,6 +603,12 @@ func (nr *NodoRaft) runCandidato() {
 
 func (nr *NodoRaft) runLider() {
 	nr.Logger.Println("Now i am a leader")
+	for i := 0; i < len(nr.Nodos); i++ {
+		if(i != nr.Yo) {
+			nr.CurrentState.NextIndex[i] = len(nr.CurrentState.Logs) + 1
+			nr.CurrentState.MatchIndex[i] = len(nr.CurrentState.Logs)
+		}
+	}
 	nr.lanzarLatidos()
 	heartPulse := time.Millisecond * time.Duration(heartTime)
 	ticker := time.NewTicker(heartPulse)
@@ -639,8 +651,11 @@ func (nr *NodoRaft) lanzarPeticionesVotos() {
 					if reply.VoteGranted {
 						nr.Logger.Println("Voto recibido")
 						nr.VoteRecivied <- true
-					} else if(nr.CurrentState.CurrentTerm < reply.Term) {
-						nr.CurrentState.CurrentTerm = reply.Term
+					} else if (nr.CurrentState.CurrentTerm <= reply.Term && nr.CurrentState.Rol == "Candidato") {
+						// nr.CurrentState.CurrentTerm = reply.Term
+						nr.CurrentState.Rol = "Seguidor"
+						nr.CurrentState.CurrentTerm--
+						nr.CurrentState.VotedFor = - 1
 					}
 				} else {
 					nr.Logger.Println("Solicitud de voto fallido")
@@ -656,6 +671,7 @@ func (nr *NodoRaft) lanzarPeticionesVotos() {
 
 func (nr *NodoRaft) lanzarLatidos() {
 	var reply Results
+	var done chan bool = make(chan bool)
 	for i := 0; i < len(nr.Nodos); i++ {
 		if i != nr.Yo {
 			args := ArgAppendEntries{
@@ -669,14 +685,17 @@ func (nr *NodoRaft) lanzarLatidos() {
 				args.PrevLogTerm = nr.CurrentState.Logs[args.PrevLogIndex].Term
 			}
 			if(nr.CurrentState.Rol == "Lider") {
-				go nr.enviarRPC(i, args, reply)
+				go nr.enviarRPC(i, args, reply,done)
 			}
 		}
+	}
+	for i := 0; i < len(nr.Nodos) - 2; i++ {
+		<-done
 	}
 	nr.actualizarEntradasComprometidas()
 }
 
-func (nr *NodoRaft) enviarRPC(i int, args ArgAppendEntries, reply Results) {
+func (nr *NodoRaft) enviarRPC(i int, args ArgAppendEntries, reply Results, done chan bool) {
 	if nr.CurrentState.Rol == "Lider" && nr.enviarAppendEntries(i, &args, &reply) {
 		if len(args.Entries) == 0 {
 			//nr.Logger.Println("Latido enviado")
@@ -687,15 +706,12 @@ func (nr *NodoRaft) enviarRPC(i int, args ArgAppendEntries, reply Results) {
 				nr.CurrentState.MatchIndex[i] += len(args.Entries)
 				nr.CurrentState.NextIndex[i] += len(args.Entries)
 				nr.Logger.Println("Append correcto")
+			} else {
+				nr.CurrentState.MatchIndex[i]--
+				nr.CurrentState.NextIndex[i]--
+				nr.Logger.Println("Append incorrecto retrocedemos")
 			}
-			////////////////////////////
-			////////////////////////////
-			////////////////////////////
-			//IMPORTANTE FALTA UN ELSE//
-			//MUY IMPORTANTE EL ELSE:)//
-			////////////////////////////
-			////////////////////////////
-			////////////////////////////
+			
 		}
 	} else {
 		if len(args.Entries) == 0 {
@@ -704,6 +720,7 @@ func (nr *NodoRaft) enviarRPC(i int, args ArgAppendEntries, reply Results) {
 			nr.Logger.Println("RPC fallido")
 		}
 	}
+	done <- true
 }
 
 func (nr *NodoRaft) actualizarEntradasComprometidas() {

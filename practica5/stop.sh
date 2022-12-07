@@ -1,0 +1,5 @@
+kubectl delete statefulset nodo
+kubectl delete service raft
+kubectl delete pod t
+
+#kubectl get pod -o=custom-columns=NODE:.spec.nodeName,NAME:.metadata.name
