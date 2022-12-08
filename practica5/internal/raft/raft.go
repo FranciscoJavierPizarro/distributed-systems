@@ -540,11 +540,15 @@ func (nr *NodoRaft) runStateMachine(canalAplicarOperacion chan AplicaOperacion) 
 		nr.Logger.Println("Operacion leida de aplicaroper")
 		if (op.Operacion == "lectura") {
 			nr.Logger.Println("Operacion de lectura del valor: ",nr.Mapa[op.Clave])
-			nr.Comprommised[tipoop.Indice] <- nr.Mapa[op.Clave]
+			if (nr.CurrentState.Rol == "Lider") {
+				nr.Comprommised[tipoop.Indice] <- nr.Mapa[op.Clave]
+			}
 		} else if (op.Operacion == "escritura") {
 			nr.Mapa[op.Clave] = op.Valor
 			nr.Logger.Println("Operación de escritura con clave: ", op.Clave, " del valor: ", op.Valor)
-			nr.Comprommised[tipoop.Indice] <- op.Valor
+			if (nr.CurrentState.Rol == "Lider") {
+				nr.Comprommised[tipoop.Indice] <- op.Valor
+			}
 		}
 	}
 }
