@@ -1,5 +1,23 @@
-package main
+/*
+* Autores:
+*	Jorge Solán Morote NIA: 816259
+*	Francisco Javier Pizarro NIA:  821259
+* Fecha de última revisión:
+*	08/12/2022
+* Descripción del fichero:
+*	Código que nos da una interfaz de cliente simulado interactivo,
+*	el cual nos permite interactuar con el sistema raft
+* Descripción de la estructura del código:
+*	1.Imports
+*	2.Constantes generales
+*	3.Funciones auxiliares para realizar llamadas RPC
+*	4.Main, código principal
+ */
 
+package main
+//====================================================================
+//	IMPORTS
+//====================================================================
 import (
 	//"errors"
 	"fmt"
@@ -11,6 +29,9 @@ import (
 	"strconv"
 	"time"
 )
+//====================================================================
+//	CONSTANTES
+//====================================================================
 const (
 	errorTime = 40//ms
 	startTime = 7000//ms
@@ -82,7 +103,9 @@ func obtenerCompromiso(
 	return
 }
 
-
+//====================================================================
+//	MAIN
+//====================================================================
 func main() {
 	nodos := rpctimeout.StringArrayToHostPortArray([]string{"nodo-0.raft.default.svc.cluster.local:29000","nodo-1.raft.default.svc.cluster.local:29000","nodo-2.raft.default.svc.cluster.local:29000"})
 	
